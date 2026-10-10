@@ -1,0 +1,71 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        BETTER_AUTH_URL: ${BETTER_AUTH_URL:?set BETTER_AUTH_URL in .env}
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "bunx prisma migrate deploy && node --import tsx server.ts"
+    ports:
+      - "3000:3000"
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: app
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${BETTER_AUTH_URL:?set BETTER_AUTH_URL in .env}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    # counters + cache only: no persistence, LRU under a hard memory cap; internal network only (no ports)
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  coturn:
+    image: coturn/coturn
+    profiles: ["turn"]
+    network_mode: host
+    command:
+      - --realm=vc-demo
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET:?set TURN_SECRET for the turn profile}
+      - --no-multicast-peers
+
+volumes:
+  pgdata:
+  miniodata:

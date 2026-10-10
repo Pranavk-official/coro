@@ -1,0 +1,15 @@
+{
+  "users": [
+    { "id": "seed-host-001", "name": "Seed Host", "email": "host@seed.local" },
+    { "id": "seed-member-001", "name": "Seed Member", "email": "member@seed.local" }
+  ],
+  "rooms": [
+    {
+      "code": "aaa-bbbb-ccc",
+      "name": "Seed standup",
+      "kind": "instant",
+      "hostId": "seed-host-001",
+      "allowGuests": true
+    }
+  ]
+}

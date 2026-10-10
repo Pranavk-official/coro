@@ -39,3 +39,37 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+## AGENT FILES
+.agents/
+.claude/
+.opencode/
+.windsurf/
+skills-lock.json
+specs/
+# env examples are the contract — keep them
+!.env.example
+!dev/.env.dev.example
+
+# prisma (generated client lives in src/generated, see prisma/schema.prisma)
+/src/generated/
+
+# dev tooling
+/dev/backups/
+*.dump
+
+# graphify
+graphify-out/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/tests/.auth/
+
+# local recordings / media scratch
+/recordings/
+
+/src/generated/prisma

@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+graphify-out
+test-results
+playwright-report
+blob-report
+tests/.auth
+dev/backups
+.env
+dev/.env
+*.dump
+/recordings

@@ -1,26 +1,415 @@
 @import "tailwindcss";
+@import "@heroui/styles";
+
+/* Spec 006 — Apple web design language on HeroUI tokens (specs/006-liquid-glass-redesign/design.md §A2). */
+:root,
+.light {
+  --background: #f5f5f7; /* parchment */
+  --foreground: #1d1d1f; /* ink */
+  --surface: #ffffff;
+  --surface-secondary: #fafafc; /* pearl */
+  --surface-tertiary: #f0f0f2;
+  --overlay: #ffffff;
+  --muted: #6e6e73; /* source #7a7a7a fails 4.5:1 on white */
+  --accent: #0066cc; /* Action Blue */
+  --accent-foreground: #ffffff;
+  --focus: #0071e3;
+  --link: #0066cc;
+  --danger: #e30000;
+  --danger-foreground: #ffffff;
+  --success: #248a3d;
+  --warning: #b25000;
+  --separator: rgb(0 0 0 / 0.08);
+  --border: rgb(0 0 0 / 0.08);
+  --default: #e8e8ed;
+  --default-foreground: #1d1d1f;
+  --field-background: #ffffff;
+  --field-border: rgb(0 0 0 / 0.12);
+  --field-border-width: 1px;
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --glass-border: rgb(0 0 0 / 0.08);
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --surface: #1c1c1e;
+  --surface-secondary: #2c2c2e;
+  --surface-tertiary: #3a3a3c;
+  --overlay: #2c2c2e;
+  --muted: #a1a1a6;
+  --accent: #0071e3; /* white text 4.9:1; Sky Blue #2997ff is for links only */
+  --accent-foreground: #ffffff;
+  --focus: #2997ff;
+  --link: #2997ff;
+  --danger: #ff453a;
+  --danger-foreground: #ffffff;
+  --success: #30d158;
+  --warning: #ff9f0a;
+  --separator: rgb(255 255 255 / 0.12);
+  --border: rgb(255 255 255 / 0.12);
+  --default: #2c2c2e;
+  --default-foreground: #f5f5f7;
+  --field-background: #1c1c1e;
+  --field-border: rgb(255 255 255 / 0.16);
+  --glass-bg: rgb(30 30 32 / 0.62);
+  --glass-border: rgb(255 255 255 / 0.14);
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 11px;
+  --field-radius: 12px;
+  --shadow-product: 0 5px 30px rgb(0 0 0 / 0.22);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto,
+    sans-serif;
+  --color-glass: var(--glass-bg);
+  --color-link: var(--link);
+  --color-hairline: var(--separator);
+  --radius-card: 18px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
+  /* Iridescent ambient wash: gives the glass something to refract (006 §A5). Call screens paint their own black. */
+  background:
+    radial-gradient(60% 50% at 0% 0%, var(--ambient-1), transparent 70%),
+    radial-gradient(50% 45% at 100% 10%, var(--ambient-2), transparent 70%),
+    radial-gradient(60% 50% at 50% 100%, var(--ambient-3), transparent 70%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+/* Actions are pills via HeroUI's rounded-3xl; ButtonGroup keeps its joined edges. */
+
+/* Liquid glass: translucent surface + blur + hairline (R5). Opacity kept high enough for 4.5:1 text. */
+@utility glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+/* The one shadow: only under video / the camera preview. */
+@utility shadow-product {
+  box-shadow: var(--shadow-product);
+}
+
+/* Apple press feedback. */
+@utility press {
+  transition: transform 150ms ease-out;
+  &:active,
+  &[data-pressed="true"] {
+    transform: scale(0.95);
+  }
+}
+
+/* Micro-interactions (ref kinetics.colorion.co). State-scoped only, so HeroUI's layered base styles still apply.
+   Buttons squish fast on press and spring back on release. */
+.button,
+.toggle-button {
+  transition: transform 450ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 150ms ease-out;
+}
+/* :active, not [data-pressed]: react-aria keeps data-pressed on a dialog/menu trigger while it is open. */
+.button:active,
+.toggle-button:active {
+  transform: scale(0.94);
+  transition-duration: 80ms;
+}
+/* Selected toggle (theme switcher, segmented controls): icon pops. */
+.toggle-button[data-selected="true"] > svg {
+  animation: mi-pop 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* Fields: label tints accent while focused; invalid field shakes once when the error appears. */
+:is(.textfield, .select) > .label {
+  transition: color 200ms ease-out;
+}
+:is(.textfield, .select):focus-within > .label {
+  color: var(--accent);
+}
+.textfield[data-invalid="true"] :is(.input, .input-group),
+.select[data-invalid="true"] .select__trigger {
+  animation: mi-shake 320ms ease-in-out;
+}
+.switch__thumb {
+  transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* Theme switcher (ref kinetics "Snap Rail" + "Expanding Search"). Slot = 36px button + 4px gap.
+   Rail: one pill springs to the hovered option, resting on the selected one. */
+/* HeroUI caps menus at 48svw — on a 375px phone that wraps every item. Let them use the screen. */
+.dropdown__popover {
+  max-width: calc(100svw - 2rem);
+}
+.theme-rail {
+  position: relative;
+  --i: 0;
+  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.theme-rail::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: var(--color-default);
+  transform: translateX(calc(var(--i) * 40px));
+  transition: transform 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.theme-rail:has(> :nth-child(2)[data-selected="true"]) { --i: 1; }
+.theme-rail:has(> :nth-child(3)[data-selected="true"]) { --i: 2; }
+.theme-rail:has(> :nth-child(1):hover) { --i: 0; }
+.theme-rail:has(> :nth-child(2):hover) { --i: 1; }
+.theme-rail:has(> :nth-child(3):hover) { --i: 2; }
+.theme-rail > .toggle-button { position: relative; }
+/* Dock: collapsed to one slot showing the selected theme; glides open on hover/focus (tap on touch). */
+.theme-dock {
+  width: 44px;
+  overflow: hidden;
+  transition: width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.theme-dock:is(:hover, :focus-within) { width: 124px; }
+.theme-dock:not(:hover, :focus-within) > .theme-rail { transform: translateX(calc(var(--i) * -40px)); }
+/* Scrollbars: thin translucent ink thumb on a clear track, per theme (call screen's nested .dark included).
+   Values never change on hover/state: a changing scrollbar-color transition broke overlay close (below).
+   HeroUI's `scrollbar` utility (popovers) reads the same vars. */
+:root,
+.light,
+.dark {
+  --scrollbar-thumb: color-mix(in oklab, var(--foreground) 28%, transparent);
+  --scrollbar-track: transparent;
+  --scrollbar-width: thin;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+/* Safari (no scrollbar-color): same look via the WebKit pseudos — a pill inset 3px from the edge. */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb) padding-box;
+    border: 3px solid transparent;
+    border-radius: 9999px;
+  }
+}
+/* Overlay close fix: react-aria waits on every running animation of a closing overlay and never finishes if one
+   is cancelled. HeroUI gives these containers `transition: all`; headed browsers (scrollbars) start a
+   `scrollbar-color` transition on close that gets cancelled, so the modal stayed up, already closed, ignoring
+   X/Esc/outside. Limit to what HeroUI popovers transition. Not drawers: their close is transition-driven. */
+:is(.modal__container, .alert-dialog__container, .modal__backdrop, .alert-dialog__backdrop) {
+  transition-property: opacity, transform;
+}
+
+@keyframes mi-pop {
+  0% { transform: scale(0.7) rotate(-20deg); opacity: 0; filter: blur(6px); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes mi-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+/* Liquid glass material on every HeroUI field, card and overlay (006 §A5). Video stays opaque.
+   Depth = blur + specular top edge + faint chromatic fringe; no drop shadows (§A1). */
+@property --glass-angle {
+  syntax: "<angle>";
+  inherits: true; /* the ::after rim reads it from its host */
+  initial-value: 135deg;
+}
+:root,
+.light {
+  --field-background: rgb(255 255 255 / 0.62);
+  --glass-highlight: rgb(255 255 255 / 0.7);
+  --ambient-1: rgb(255 170 200 / 0.35);
+  --ambient-2: rgb(140 200 255 / 0.35);
+  --ambient-3: rgb(190 160 255 / 0.3);
+  --glass-iris: rgb(255 120 160 / 0.45), rgb(120 200 255 / 0.45), rgb(170 140 255 / 0.4), rgb(255 220 140 / 0.4);
+}
+.dark {
+  --field-background: rgb(44 44 46 / 0.62);
+  --glass-highlight: rgb(255 255 255 / 0.12);
+  --ambient-1: rgb(255 80 140 / 0.1);
+  --ambient-2: rgb(40 140 255 / 0.12);
+  --ambient-3: rgb(140 90 255 / 0.1);
+  --glass-iris: rgb(255 100 150 / 0.35), rgb(90 180 255 / 0.35), rgb(160 120 255 / 0.3), rgb(255 200 120 / 0.28);
+}
+:is(.input, .input-group, .textarea, .select__trigger, .search-field__group),
+:is(.card, .popover, .dropdown__popover, .select__popover, .combo-box__popover, .modal__dialog, .alert-dialog__dialog, .drawer__dialog, .toast) {
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    inset 1px 0 0 rgb(255 60 120 / 0.08),
+    inset -1px 0 0 rgb(60 150 255 / 0.08);
+  transition:
+    backdrop-filter 450ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 450ms ease-out,
+    border-color 450ms ease-out,
+    --glass-angle 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Dynamic blur: fields thicken while focused. */
+:is(.input, .textarea):focus,
+:is(.input-group, .select__trigger, .search-field__group):focus-within {
+  -webkit-backdrop-filter: saturate(200%) blur(24px);
+  backdrop-filter: saturate(200%) blur(24px);
+}
+:is(.card, .popover, .dropdown__popover, .select__popover, .combo-box__popover, .modal__dialog, .alert-dialog__dialog, .drawer__dialog, .toast) {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+:is(.card, .modal__dialog, .alert-dialog__dialog) {
+  position: relative;
+}
+/* Iridescent rim: a 1px conic ring masked to the border; turns a third when hovered. */
+:is(.card, .popover, .dropdown__popover, .select__popover, .combo-box__popover, .modal__dialog, .alert-dialog__dialog, .drawer__dialog, .toast)::after {
+  content: "";
+  position: absolute;
+  inset: 0; /* inside the edge: popovers are overflow:auto, -1px made them scroll */
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--glass-angle), var(--glass-iris), rgb(255 120 160 / 0));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+:is(.card, .popover, .dropdown__popover, .select__popover, .modal__dialog, .drawer__dialog, .toast):hover {
+  --glass-angle: 255deg;
+}
+
+/* Base layer, not unlayered: HeroUI's component focus styles (e.g. InputGroup rings the whole group and
+   removes the inner input outline) must win; unlayered, this split the password field's ring. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, :is(.card, .popover, .dropdown__popover, .select__popover, .combo-box__popover, .modal__dialog, .alert-dialog__dialog, .drawer__dialog, .toast) {
+    background: var(--overlay);
+  }
+  :root,
+  .light {
+    --field-background: #ffffff;
+  }
+  .dark {
+    --field-background: #1c1c1e;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass, :is(.card, .popover, .dropdown__popover, .select__popover, .combo-box__popover, .modal__dialog, .alert-dialog__dialog, .drawer__dialog, .toast),
+  :is(.input, .input-group, .textarea, .select__trigger, .search-field__group) {
+    background-color: var(--overlay);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  :root,
+  .light {
+    --field-background: #ffffff;
+  }
+  .dark {
+    --field-background: #1c1c1e;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+  .button:active,
+  .toggle-button:active,
+  .press:active {
+    transform: none;
+  }
+}
+
+/* Landing backdrops (look after uploadthing.ui-layouts.com, in Coro tokens; works in both themes).
+   Plain classes, no custom properties: the dev CSS pipeline dropped these as @utility blocks with local vars. */
+.landing-grid {
+  background-image:
+    radial-gradient(55% 45% at 50% 0%, color-mix(in oklab, var(--accent) 38%, transparent), transparent 70%),
+    linear-gradient(to right, color-mix(in oklab, var(--foreground) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 7%, transparent) 1px, transparent 1px);
+  background-size: 100% 100%, 88px 88px, 88px 88px;
+  background-position: center top;
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 95%);
+}
+/* Drifting specks near the top glow. */
+.landing-dust {
+  background-image:
+    radial-gradient(color-mix(in oklab, var(--accent) 70%, transparent) 1px, transparent 1.5px),
+    radial-gradient(color-mix(in oklab, var(--foreground) 35%, transparent) 1px, transparent 1.5px);
+  background-size: 37px 41px, 59px 53px;
+  background-position: 0 0, 19px 23px;
+  mask-image: radial-gradient(40% 70% at 50% 0%, #000, transparent);
+  animation: landing-drift 30s linear infinite;
+}
+/* Vertical light rays over the horizon. */
+.landing-rays {
+  background-image:
+    radial-gradient(50% 60% at 50% 100%, color-mix(in oklab, var(--accent) 40%, transparent), transparent 70%),
+    repeating-linear-gradient(to right, color-mix(in oklab, var(--foreground) 7%, transparent) 0 1px, transparent 1px 70px);
+  mask-image: radial-gradient(60% 90% at 50% 100%, #000, transparent);
+}
+/* The horizon: a huge circle whose top edge glows. */
+.landing-arc {
+  background: linear-gradient(var(--background) 0, var(--background) 360px, transparent 720px);
+  border-top: 1px solid color-mix(in oklab, var(--accent) 45%, var(--separator));
+  box-shadow: 0 -30px 90px -30px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+.blur-in {
+  animation: blur-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes blur-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translateY(0.15em);
+  }
+}
+@keyframes landing-drift {
+  to {
+    background-position: 0 -410px, 19px -507px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blur-in,
+  .landing-dust {
+    animation: none;
+  }
 }
