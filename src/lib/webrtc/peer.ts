@@ -96,6 +96,10 @@ export function createPeer(
   }
 
   pc.onnegotiationneeded = async () => {
+    // First offer comes from the impolite side only: both offering at once forces the polite side to roll
+    // back mid-gathering, and Chromium then never gathers a candidate on that connection (ICE stuck at
+    // "new", no media, ~1 call in 3). Our tracks still go out: their transceivers pair with the offer's.
+    if (peer.polite && !pc.remoteDescription) return;
     try {
       peer.makingOffer = true;
       await pc.setLocalDescription();

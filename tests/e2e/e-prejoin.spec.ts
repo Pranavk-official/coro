@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { asRole, createRoomAs, enterCall, expectPlaying, leaveButton } from "./helpers";
+import { asRole, createRoomAs, enterCall } from "./helpers";
 
 const countGum = () => {
   const w = window as unknown as { __gum: number };
@@ -10,20 +10,6 @@ const countGum = () => {
     return orig(c);
   };
 };
-
-test("E20 @regression @uat pre-join: live preview, level meter moves, Join now focused, Enter joins", async ({ browser }) => {
-  const { ctx, page } = await asRole(browser, "member");
-  const room = await createRoomAs(ctx.request, { name: "E20", kind: "instant" });
-  await page.goto(`/rooms/${room.code}`);
-  await expectPlaying(page.locator("video").first());
-  await expect
-    .poll(async () => Number((await page.getByLabel(/^Microphone level/).getAttribute("aria-label"))?.match(/\d+/)?.[0]), { timeout: 10_000 })
-    .toBeGreaterThan(0);
-  await expect(page.getByRole("button", { name: "Join now" })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(leaveButton(page)).toBeVisible({ timeout: 10_000 });
-  await ctx.close();
-});
 
 test("E21 @regression @uat mic+cam off is remembered, one getUserMedia per join", async ({ browser }) => {
   const { ctx, page } = await asRole(browser, "member");

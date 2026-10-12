@@ -2,6 +2,13 @@ import { expect, test, type Page } from "@playwright/test";
 import { AUTH, createRoomAs, enterCall } from "./helpers";
 
 const noHScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+// Inner scrollers too (device pills once scrolled sideways inside a non-scrolling page).
+const innerHScroll = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll("main *")]
+      .filter((el) => el.scrollWidth > el.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(el).overflowX))
+      .map((el) => el.className),
+  );
 const smallTargets = (page: Page, scope: string) =>
   page.evaluate(
     (sel) =>
@@ -24,6 +31,7 @@ test("V2 V3 @regression 375px: no horizontal scroll, call + pre-join actions ≥
   await page.goto(`/rooms/${room.code}`);
   await expect(page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 10_000 });
   expect(await noHScroll(page)).toBe(true);
+  expect(await innerHScroll(page)).toEqual([]);
   expect(await smallTargets(page, "main")).toEqual([]);
 
   await enterCall(page, room.code);

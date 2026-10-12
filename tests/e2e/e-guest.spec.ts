@@ -101,3 +101,25 @@ test("E28 @regression @uat signed-out link → name + guest, no wall; Sign in in
   await host.ctx.close();
   await ctx.close();
 });
+
+test("E41 @regression guest is signed out once the meeting ends and they land home", async ({ browser }) => {
+  const host = await asRole(browser, "host");
+  const room = await createRoomAs(host.ctx.request, { name: "E41", kind: "instant" });
+  await enterCall(host.page, room.code);
+  const guestCtx = await browser.newContext();
+  const guest = await guestCtx.newPage();
+  await joinAsGuest(guest, room.code, "Gil");
+  await host.page.getByRole("status").getByRole("button", { name: "Admit" }).click({ timeout: 15000 });
+  await expect(guest.getByRole("button", { name: /^Leave/ }).first()).toBeVisible({ timeout: 5000 });
+  const session = async () => (await guestCtx.request.get("/api/auth/get-session")).json();
+  expect((await session())?.user?.isAnonymous).toBe(true);
+
+  await host.page.getByRole("button", { name: "Leave options" }).click();
+  await host.page.getByRole("menuitem", { name: "End for everyone" }).click();
+  await host.page.getByRole("button", { name: "End meeting" }).click();
+  await expect(guest).toHaveURL("/", { timeout: 15_000 }); // timed redirect after the end
+  await expect(guest.getByRole("heading", { name: "Your rooms" })).toHaveCount(0); // landing, not the lobby
+  await expect.poll(session, { timeout: 5000 }).toBeNull();
+  await host.ctx.close();
+  await guestCtx.close();
+});

@@ -11,6 +11,7 @@ import { Mic, MicOff, Video, VideoOff, Volume2 } from "lucide-react";
 import type { MediaState } from "@/lib/socket.io/events";
 import { usePrejoin } from "@/lib/webrtc/use-prejoin";
 import { getDisplayStream } from "@/lib/webrtc/screen";
+import { PersonAvatar } from "@/components/call/VideoTile";
 import { authClient, useSession } from "@/lib/better-auth/client";
 import { toApiError } from "@/lib/hono/client";
 import { errorCopy } from "@/lib/utils/error-copy";
@@ -164,14 +165,18 @@ export default function PreJoin({
             className={`h-full w-full object-cover [transform:scaleX(-1)] ${pre.prefs.cam ? "" : "invisible"}`}
           />
           {!pre.prefs.cam ? (
-            <p className="absolute inset-0 flex items-center justify-center text-[21px] text-white/90">
-              {pre.ready ? "Camera is off" : "Camera is starting"}
-            </p>
+            pre.ready ? (
+              <PersonAvatar seed={session?.user.id ?? "you"} name={displayName} image={session?.user.image} />
+            ) : (
+              <p className="absolute inset-0 flex items-center justify-center text-[21px] text-white/90">Camera is starting</p>
+            )
           ) : null}
           <p className="absolute left-4 top-3 text-[15px] font-semibold text-white drop-shadow">{displayName}</p>
-          <div className="glass absolute bottom-4 left-4 hidden h-10 items-center rounded-full px-3 sm:flex">
-            <LevelMeter level={pre.level} />
-          </div>
+          {pre.prefs.mic ? (
+            <div className="glass absolute bottom-4 left-4 flex h-10 items-center rounded-full px-3">
+              <LevelMeter level={pre.level} />
+            </div>
+          ) : null}
           <div className="absolute inset-x-0 bottom-4 flex items-center justify-center gap-4">
             <Button
               isIconOnly
@@ -195,13 +200,12 @@ export default function PreJoin({
             </Button>
           </div>
         </div>
-        {/* Device pills: one row, scrolls sideways on phones instead of wrapping. */}
-        <div className="relative -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
+        {/* Device pills: stacked on phones (no sideways scroll), one row from sm up. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-3">
           <SelectField
             label="Microphone"
             hideLabel
             icon={<Mic size={16} />}
-            className="w-56 shrink-0 sm:w-auto"
             value={deviceValue(pre.prefs.micId, deviceOptions(mics))}
             options={deviceOptions(mics)}
             onChange={(id) => void pre.selectDevice("audio", id === SYSTEM ? "" : id)}
@@ -211,8 +215,7 @@ export default function PreJoin({
               label="Speaker"
               hideLabel
               icon={<Volume2 size={16} />}
-              className="w-56 shrink-0 sm:w-auto"
-              value={deviceValue(pre.prefs.speakerId, deviceOptions(speakers))}
+                value={deviceValue(pre.prefs.speakerId, deviceOptions(speakers))}
               options={deviceOptions(speakers)}
               onChange={(id) => void pre.selectDevice("speaker", id === SYSTEM ? "" : id)}
             />
@@ -221,7 +224,6 @@ export default function PreJoin({
             label="Camera"
             hideLabel
             icon={<Video size={16} />}
-            className="w-56 shrink-0 sm:w-auto"
             value={deviceValue(pre.prefs.camId, deviceOptions(cams))}
             options={deviceOptions(cams)}
             onChange={(id) => void pre.selectDevice("video", id === SYSTEM ? "" : id)}

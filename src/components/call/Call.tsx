@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, useOverlayState } from "@heroui/react";
+import { Copy, Share2 } from "lucide-react";
 import { useEndRoom, useRoom } from "@/hooks/use-rooms";
 import { getSocket } from "@/lib/socket.io/client";
 import type { JoinError, MediaState } from "@/lib/socket.io/events";
@@ -20,7 +21,8 @@ import WaitingRoom from "@/components/call/WaitingRoom";
 import AdmitBanner from "@/components/call/AdmitBanner";
 import MeetingChip from "@/components/call/MeetingChip";
 import ShortcutsSheet from "@/components/call/ShortcutsSheet";
-import { LocalPreview, VideoGrid } from "@/components/call/VideoTile";
+import { LocalPreview, PersonAvatar, SpeakingRing, VideoGrid } from "@/components/call/VideoTile";
+import { useSession } from "@/lib/better-auth/client";
 import Toolbar from "@/components/call/Toolbar";
 import PresentingBanner from "@/components/call/PresentingBanner";
 import ParticipantsDrawer from "@/components/call/ParticipantsDrawer";
@@ -107,6 +109,7 @@ export default function Call({
     typeof HTMLMediaElement !== "undefined" &&
     typeof (HTMLVideoElement.prototype as { setSinkId?: unknown }).setSinkId === "function";
 
+  const { data: session } = useSession();
   const call = useCall({
     code,
     joinToken,
@@ -351,9 +354,31 @@ export default function Call({
           <PresentingBanner stream={call.localScreen} onStop={() => void call.stopShare()} />
         ) : null}
         {remotes.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
-            <p className="text-[21px] font-semibold">You&apos;re the only one here</p>
-            <p className="text-muted">Share the link to invite people.</p>
+          // Meet-style empty state: the link itself, one tap to copy, one to share.
+          <div className="flex flex-1 flex-col justify-center">
+            <div className="mx-auto flex w-full max-w-md flex-col gap-3 px-2">
+              <p className="text-[21px] font-semibold">You&apos;re the only one here</p>
+              <p className="text-muted">Share this meeting link with others you want in the meeting.</p>
+              <div className="flex items-center gap-2 rounded-full bg-surface-secondary py-1 pl-4 pr-1">
+                <span className="min-w-0 flex-1 truncate text-sm" suppressHydrationWarning>
+                  {typeof window !== "undefined" ? window.location.host : ""}/rooms/{code}
+                </span>
+                <Button isIconOnly variant="ghost" aria-label="Copy meeting link" onPress={() => void copyLink()}>
+                  <Copy size={18} />
+                </Button>
+              </div>
+              <Button
+                variant="secondary"
+                className="self-start"
+                onPress={() =>
+                  "share" in navigator
+                    ? void navigator.share({ url: `${window.location.origin}/rooms/${code}` }).catch(() => undefined)
+                    : void copyLink()
+                }
+              >
+                <Share2 size={18} /> Share invite
+              </Button>
+            </div>
           </div>
         ) : (
           <VideoGrid
@@ -369,7 +394,9 @@ export default function Call({
       {/* Self-view floats like FaceTime's PiP so the people you're talking to get the screen. */}
       <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-3 z-20 w-28 overflow-hidden rounded-2xl border border-hairline bg-surface shadow-product sm:w-56">
         <LocalPreview stream={stream} />
+        {!call.localState.cam ? <PersonAvatar seed={session?.user.id ?? "you"} name={session?.user.name || "You"} image={session?.user.image} size={80} /> : null}
         <p className="absolute bottom-1 left-2 text-xs font-semibold text-white drop-shadow">You</p>
+        {call.speakingId === "local" && call.localState.mic ? <SpeakingRing /> : null}
       </div>
       <div className="absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-30 flex justify-center px-2">
       <Toolbar

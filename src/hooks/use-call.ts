@@ -409,6 +409,7 @@ export function useCall(opts: {
       follow.cancel();
       detectorRef.current = null;
       followRef.current = null;
+      detectorStreams.current.clear(); // the next detector starts empty (StrictMode remount)
     };
   }, []);
 

@@ -2,8 +2,16 @@
 import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage, Badge, Chip } from "@heroui/react";
 import { Crown, MicOff, MonitorUp, VideoOff } from "lucide-react";
+import { Mascot } from "page-mascot";
 import type { RemotePeer } from "@/hooks/use-call";
 import { layoutTiles, tileId, type TileKey } from "@/lib/webrtc/screen";
+import { setSpeaker } from "@/lib/webrtc/devices";
+import { getPrefs } from "@/lib/utils/prefs";
+
+/** Speaking highlight: its own top layer, so the avatar overlay can't paint over it. Render it last. */
+export function SpeakingRing() {
+  return <div data-speaking aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] border-[3px] border-link" />;
+}
 
 export function LocalPreview({ stream, mirrored = true }: { stream: MediaStream | null; mirrored?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -22,13 +30,57 @@ export function LocalPreview({ stream, mirrored = true }: { stream: MediaStream 
   );
 }
 
-function initials(name: string): string {
+export function initials(name: string): string {
   return name
     .split(" ")
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+// Sprite sheets in public/mascots (page-mascot); one per person, picked from a stable seed.
+const MASCOTS = ["fox", "bunny", "cat", "panda", "owl", "otter", "koala", "penguin"];
+
+function mascotFor(seed: string): string {
+  let h = 0;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return MASCOTS[Math.abs(h) % MASCOTS.length]!;
+}
+
+/** Shown instead of the picture whenever the camera is off: profile photo, else the person's mascot. */
+export function PersonAvatar({
+  seed,
+  name,
+  image,
+  size = 140,
+}: {
+  seed: string;
+  name: string;
+  image?: string | null;
+  size?: number;
+}) {
+  const m = mascotFor(seed);
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-surface">
+      {image ? (
+        <Avatar size="lg">
+          <AvatarImage src={image} />
+          <AvatarFallback>{initials(name)}</AvatarFallback>
+        </Avatar>
+      ) : (
+        // Booping the mascot must not also pin the tile underneath.
+        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <Mascot
+            directions={`/mascots/${m}-directions.webp`}
+            reactions={`/mascots/${m}-reactions.webp`}
+            size={size}
+            label={`${name}'s avatar`}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Badges({ mic, cam }: { mic: boolean; cam: boolean }) {
@@ -52,22 +104,29 @@ export default function VideoTile({
   peer,
   pinned,
   speaking,
+  compact,
   onPin,
 }: {
   peer: RemotePeer;
   pinned?: boolean;
   speaking?: boolean;
+  /** Small rail tile: smaller avatar. */
+  compact?: boolean;
   onPin?: () => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    if (ref.current) ref.current.srcObject = peer.stream;
+    const el = ref.current;
+    if (!el) return;
+    el.srcObject = peer.stream;
+    const sink = getPrefs().speakerId; // tiles mounted after a speaker pick need it too
+    if (sink) setSpeaker(el, sink);
   }, [peer.stream]);
   const { info } = peer;
   const camOff = !info.state.cam; // the screen has its own tile (spec 007)
   return (
     <div
-      className={`relative h-full min-h-0 overflow-hidden rounded-card bg-surface ${speaking ? "ring-2 ring-link" : ""}`}
+      className="relative h-full min-h-0 overflow-hidden rounded-card bg-surface"
       onClick={onPin}
       onKeyDown={(e) => {
         if ((e.key === "Enter" || e.key === " ") && onPin) {
@@ -79,22 +138,15 @@ export default function VideoTile({
       tabIndex={onPin ? 0 : undefined}
       aria-label={onPin ? `Pin ${info.name}` : undefined}
     >
-      {camOff || !peer.stream ? (
-        <div className="flex h-full items-center justify-center">
-          <Avatar size="lg">
-            <AvatarImage src={info.image ?? undefined} />
-            <AvatarFallback>{initials(info.name)}</AvatarFallback>
-          </Avatar>
-        </div>
-      ) : (
-        <video
-          ref={ref}
-          autoPlay
-          playsInline
-          aria-label={`${info.name}'s video`}
-          className="h-full w-full object-cover"
-        />
-      )}
+      {/* Always mounted: this element also plays the peer's audio (and feeds speaker detection). */}
+      <video
+        ref={ref}
+        autoPlay
+        playsInline
+        aria-label={`${info.name}'s video`}
+        className={`h-full w-full object-cover ${camOff ? "invisible" : ""}`}
+      />
+      {camOff ? <PersonAvatar seed={info.userId} name={info.name} image={info.image} size={compact ? 72 : 140} /> : null}
       <div className="absolute bottom-2 left-2 flex items-center gap-1">
         <span className="glass rounded-full px-2.5 py-1 text-sm font-semibold text-white">
           {info.name}
@@ -114,6 +166,7 @@ export default function VideoTile({
       <div className="absolute right-2 top-2">
         <Badges mic={info.state.mic} cam={info.state.cam} />
       </div>
+      {speaking ? <SpeakingRing /> : null}
     </div>
   );
 }
@@ -194,7 +247,7 @@ export function VideoGrid({
     pinnedId: pinnedId ?? null,
     followedId: followedId ?? null,
   });
-  const tile = (t: TileKey) => {
+  const tile = (t: TileKey, compact = false) => {
     const peer = byId.get(t.id);
     if (!peer) return null;
     const key = tileId(t);
@@ -202,7 +255,7 @@ export function VideoGrid({
     return t.kind === "screen" ? (
       <ScreenTile key={key} peer={peer} pinned={pinnedId === key} onPin={pin} />
     ) : (
-      <VideoTile key={key} peer={peer} pinned={pinnedId === key} speaking={speakingId === t.id} onPin={pin} />
+      <VideoTile key={key} peer={peer} pinned={pinnedId === key} speaking={speakingId === t.id} compact={compact} onPin={pin} />
     );
   };
   if (main) {
@@ -213,7 +266,7 @@ export function VideoGrid({
           <div className="flex h-24 shrink-0 gap-2 overflow-x-auto sm:h-28">
             {rail.map((t) => (
               <div key={tileId(t)} className="aspect-video h-full shrink-0">
-                {tile(t)}
+                {tile(t, true)}
               </div>
             ))}
           </div>
@@ -224,5 +277,5 @@ export function VideoGrid({
   const n = rail.length;
   // phone portrait: stack 1–2 people full width; then 2 columns; 3 on wide screens
   const cols = n <= 1 ? "grid-cols-1" : n === 2 ? "grid-cols-1 sm:grid-cols-2" : n <= 4 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3";
-  return <div className={`grid min-h-0 flex-1 auto-rows-fr gap-2 ${cols}`}>{rail.map(tile)}</div>;
+  return <div className={`grid min-h-0 flex-1 auto-rows-fr gap-2 ${cols}`}>{rail.map((t) => tile(t))}</div>;
 }

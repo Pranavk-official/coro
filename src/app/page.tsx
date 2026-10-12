@@ -1,6 +1,6 @@
 "use client";
-import { Suspense, useState } from "react";
-import { useSession } from "@/lib/better-auth/client";
+import { Suspense, useEffect, useState } from "react";
+import { signOut, useSession } from "@/lib/better-auth/client";
 import AppHeader from "@/components/layout/AppHeader";
 import NewMeetingMenu from "@/components/lobby/NewMeetingMenu";
 import MeetingInput from "@/components/lobby/MeetingInput";
@@ -42,10 +42,15 @@ export default function Home() {
   // so gating on isRefetching flashed the landing for signed-in users. Later refetches (sign-out) keep the page.
   const [ready, setReady] = useState(false);
   if (!isPending && !ready) setReady(true);
+  // Guest sessions exist only for one meeting: every way out of a call lands here, so end it here.
+  const guest = (session?.user as { isAnonymous?: boolean } | undefined)?.isAnonymous ?? false;
+  useEffect(() => {
+    if (guest) void signOut();
+  }, [guest]);
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <Suspense>{!ready ? null : session?.user ? <Lobby /> : <Landing />}</Suspense>
+      <Suspense>{!ready ? null : session?.user && !guest ? <Lobby /> : <Landing />}</Suspense>
     </div>
   );
 }
