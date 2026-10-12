@@ -15,7 +15,7 @@ import { emailLimit } from "@/server/middlewares/auth-email-limit";
 import { errorHandler } from "@/server/middlewares/error-handler";
 
 // Real Redis from the dev compose, DB 15 so tests never touch dev counters (tests.md header).
-process.env.REDIS_URL = "redis://localhost:6379/15";
+process.env.REDIS_URL = "redis://localhost:16379/15";
 delete process.env.RATE_LIMIT_DISABLED;
 const RUN = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 

@@ -53,8 +53,8 @@ case "${1:-}" in
   -Q) (cd .. && bunx prisma migrate status) ;;
   -Qs) (cd .. && bunx prisma studio) ;;
   -Qp) $COMPOSE exec db psql -U app app ;;
-  -Qo) echo "MinIO console: http://localhost:9001  user=minio  password=minio123" ;;
-  -Qm) echo "Mailpit UI: http://localhost:8025  (SMTP localhost:1025)" ;;
+  -Qo) echo "MinIO console: http://localhost:19001  user=minio  password=minio123" ;;
+  -Qm) echo "Mailpit UI: http://localhost:18025  (SMTP localhost:11025)" ;;
   -Qr)
     $COMPOSE exec -T redis redis-cli INFO stats | grep -E '^(total_commands_processed|keyspace_hits|keyspace_misses|expired_keys|evicted_keys):'
     $COMPOSE exec -T redis redis-cli INFO memory | grep -E '^used_memory_human:'

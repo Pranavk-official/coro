@@ -95,7 +95,7 @@ Open <http://localhost:3000>.
 
 > [!TIP]
 > Auth emails (magic links, verification, reset) go to Mailpit. Start it with
-> `docker compose -f dev/docker-compose.dev.yml up -d mailpit` and read mail at <http://localhost:8025>.
+> `docker compose -f dev/docker-compose.dev.yml up -d mailpit` and read mail at <http://localhost:18025>.
 
 ### Sign-in providers
 
@@ -184,7 +184,7 @@ Redis holds fixed-window counters (`rl:*`), socket strikes (`strike:*`) and a sh
 
 Auth mail (magic link, email verification, password reset, "you already have an account") goes out over SMTP through `lib/nodemailer`. It is fire-and-forget: a failed send is logged and never changes the HTTP answer, so responses can't reveal which addresses have accounts.
 
-- **Dev**: Mailpit catches everything. The UI is at <http://localhost:8025> (`dev/dev-db.sh -Qm`), SMTP is `localhost:1025`.
+- **Dev**: Mailpit catches everything. The UI is at <http://localhost:18025> (`dev/dev-db.sh -Qm`), SMTP is `localhost:11025`.
 - **Prod**: set `SMTP_URL` to your provider's SMTP URL, for example `smtps://user:pass@smtp.example.com:465` (Resend, Postmark, SES and others all offer SMTP), and set `MAIL_FROM` to a sender on a domain you control. `RATE_LIMIT_MAIL_DAILY` caps the total number of mails sent per day.
 - **Deliverability checklist** for the `MAIL_FROM` domain:
   - [ ] SPF: a TXT record that includes your provider (`v=spf1 include:<provider> ~all`)

@@ -5,13 +5,13 @@ import { countMail, uniqueEmail, waitForMail } from "../e2e/mail";
 // Env is set before the dynamic imports: better-auth reads its rules once at init.
 const BASE = "http://localhost:3000";
 Object.assign(process.env, {
-  DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://app:app@localhost:5432/app",
+  DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://app:app@localhost:54329/app",
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "rate-limit-test-secret-0123456789abcdef",
   BETTER_AUTH_URL: BASE,
   AUTH_TEST_LOGIN: "1",
-  REDIS_URL: "redis://localhost:6379/15",
+  REDIS_URL: "redis://localhost:16379/15",
   TRUST_PROXY: "1", // each test picks its own client IP via X-Forwarded-For
-  SMTP_URL: process.env.SMTP_URL ?? "smtp://localhost:1025",
+  SMTP_URL: process.env.SMTP_URL ?? "smtp://localhost:11025",
   RATE_LIMIT_AUTH_EMAIL: "1000/10", // better-auth's 3/10 s would mask the per-email password limit (I23)
 });
 delete process.env.RATE_LIMIT_DISABLED;

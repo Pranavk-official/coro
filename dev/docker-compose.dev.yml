@@ -7,7 +7,7 @@ services:
       POSTGRES_DB: app
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "127.0.0.1:54329:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
@@ -24,8 +24,8 @@ services:
       MINIO_ROOT_PASSWORD: minio123
       MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:3000
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:19000:9000"
+      - "127.0.0.1:19001:9001"
     volumes:
       - miniodata:/data
     healthcheck:
@@ -37,8 +37,8 @@ services:
   mailpit:
     image: axllent/mailpit:v1
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "127.0.0.1:11025:1025"
+      - "127.0.0.1:18025:8025"
     healthcheck:
       test: ["CMD", "/mailpit", "readyz"]
       interval: 5s
@@ -50,7 +50,7 @@ services:
     # counters + cache only: no persistence, LRU under a hard memory cap (spec 002 FR12)
     command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:16379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

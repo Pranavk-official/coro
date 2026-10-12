@@ -1,5 +1,5 @@
-// Mailpit API helper (dev compose, http://localhost:8025).
-const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
+// Mailpit API helper (dev compose, http://localhost:18025).
+const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:18025";
 
 type Summary = { ID: string; Subject: string; Created: string };
 

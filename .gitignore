@@ -73,3 +73,6 @@ graphify-out/
 /recordings/
 
 /src/generated/prisma
+
+# Temp Files
+tmp/

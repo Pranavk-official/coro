@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // I5: Redis unreachable ⇒ fail open everywhere except the fail-closed limits (room password, password sign-in).
 const BASE = "http://localhost:3000";
 Object.assign(process.env, {
-  DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://app:app@localhost:5432/app",
+  DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://app:app@localhost:54329/app",
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "rate-limit-test-secret-0123456789abcdef",
   BETTER_AUTH_URL: BASE,
   REDIS_URL: "redis://127.0.0.1:6399", // nothing listens here

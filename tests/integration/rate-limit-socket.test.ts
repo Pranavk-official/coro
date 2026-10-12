@@ -7,7 +7,7 @@ import type { ClientToServerEvents, JoinResult, ServerToClientEvents } from "@/l
 
 // Signaling in-process (spec 002 I8–I12): real `registerSignaling` + real Redis (DB 15); session + room
 // lookups go to a tiny stub instead of Next, so this needs no dev server.
-process.env.REDIS_URL = "redis://localhost:6379/15";
+process.env.REDIS_URL = "redis://localhost:16379/15";
 delete process.env.RATE_LIMIT_DISABLED;
 process.env.RATE_LIMIT_SOCK_CONNECT = "1000/60"; // every client here shares 127.0.0.1; I12 lowers it
 
