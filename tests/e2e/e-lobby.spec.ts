@@ -37,15 +37,17 @@ test("E1b @regression backing out of instant pre-join creates nothing", async ({
   await ctx.close();
 });
 
-test("E22 @regression instant meeting in 2 clicks + Join now, share box after join", async ({ page }) => {
+test("E22 @regression instant meeting in 2 clicks + Join now, link shown in the call (no modal)", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "New meeting" }).click();
   await page.getByRole("menuitem", { name: /Start an instant meeting/ }).click();
   await page.getByRole("button", { name: "Join now" }).click();
-  await expect(page.getByRole("dialog", { name: "Your meeting's ready" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("You're the only one here")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   const code = new URL(page.url()).pathname.split("/").pop()!;
   expect(code).toMatch(/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/);
-  await expect(page.getByText(code).first()).toBeVisible();
+  await expect(page.getByText(`/rooms/${code}`)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy meeting link" }).first()).toBeVisible();
 });
 
 test("E2 @uat schedule, edit, delete", async ({ page }) => {

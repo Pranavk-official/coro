@@ -61,8 +61,9 @@ export function useEndRoom() {
       if (!res.ok) await apiJson(res); // throws ApiError
     },
     onSuccess: (_data, code) => {
-      qc.invalidateQueries({ queryKey: ["rooms"] });
-      qc.invalidateQueries({ queryKey: ["rooms", code] });
+      qc.invalidateQueries({ queryKey: ["rooms"], exact: true });
+      // Not a refetch: an ended instant room is deleted, and a 404 would show "Room not found" instead of "ended".
+      qc.setQueryData<PublicRoom>(["rooms", code], (r) => (r ? { ...r, status: "ended" } : r));
     },
   });
 }

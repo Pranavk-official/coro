@@ -10,7 +10,6 @@ import type { LengthValue } from "@/components/call/MeetingLength";
 import PreJoin, { type JoinArgs } from "@/components/call/PreJoin";
 import Call from "@/components/call/Call";
 import LeftScreen from "@/components/call/LeftScreen";
-import ShareDialog from "@/components/lobby/ShareDialog";
 
 // Instant meeting: nothing exists until "Join now", so backing out leaves no room behind.
 export default function NewMeetingPage() {
@@ -20,7 +19,6 @@ export default function NewMeetingPage() {
   const [length, setLength] = useState<LengthValue>({ key: "1h", custom: "" });
   const [room, setRoom] = useState<PublicRoom | null>(null);
   const [initial, setInitial] = useState<JoinArgs | null>(null);
-  const [shareOpen, setShareOpen] = useState(true);
   const [left, setLeft] = useState(false);
 
   useEffect(() => {
@@ -41,17 +39,14 @@ export default function NewMeetingPage() {
 
   if (room && initial) {
     return (
-      <>
-        <Call
-          code={room.code}
-          joinToken={null}
-          initialStream={initial.stream}
-          initialState={initial.state}
-          initialScreen={initial.screen ?? null}
-          onLeft={() => setLeft(true)}
-        />
-        <ShareDialog room={room} open={shareOpen} onClose={() => setShareOpen(false)} />
-      </>
+      <Call
+        code={room.code}
+        joinToken={null}
+        initialStream={initial.stream}
+        initialState={initial.state}
+        initialScreen={initial.screen ?? null}
+        onLeft={() => setLeft(true)}
+      />
     );
   }
 

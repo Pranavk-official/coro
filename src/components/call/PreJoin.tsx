@@ -1,13 +1,14 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Button } from "@heroui/react";
+import { Button, useOverlayState } from "@heroui/react";
+import DeviceDrawer from "@/components/call/DeviceDrawer";
 import MeetingLength, { type LengthValue } from "@/components/call/MeetingLength";
 import SelectField from "@/components/ui/SelectField";
 import { usePresence } from "@/hooks/use-presence";
 import { presenceLabel } from "@/lib/utils/presence";
 import TextInput from "@/components/ui/TextInput";
-import { Mic, MicOff, Video, VideoOff, Volume2 } from "lucide-react";
+import { ArrowLeft, Copy, EllipsisVertical, Link2, Mic, MicOff, Share2, Video, VideoOff, Volume2 } from "lucide-react";
 import type { MediaState } from "@/lib/socket.io/events";
 import { usePrejoin } from "@/lib/webrtc/use-prejoin";
 import { getDisplayStream } from "@/lib/webrtc/screen";
@@ -61,6 +62,15 @@ function LevelMeter({ level }: { level: number }) {
     </div>
   );
 }
+
+// Phone layout swaps blocks (not just styles), so each text exists once in the page.
+const PHONE = "(max-width: 639px)";
+const subscribePhone = (cb: () => void) => {
+  const mq = window.matchMedia(PHONE);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
+const usePhone = () => useSyncExternalStore(subscribePhone, () => window.matchMedia(PHONE).matches, () => false);
 
 export default function PreJoin({
   roomName,
@@ -151,11 +161,46 @@ export default function PreJoin({
     typeof HTMLMediaElement !== "undefined" &&
     typeof (HTMLVideoElement.prototype as { setSinkId?: unknown }).setSinkId === "function";
 
+  const phone = usePhone();
+  const deviceSheet = useOverlayState();
+  const link = code && typeof window !== "undefined" ? `${window.location.origin}/rooms/${code}` : "";
+  async function copyLink() {
+    await navigator.clipboard.writeText(link).catch(() => undefined);
+  }
+
   return (
-    <main className="mx-auto grid flex-1 w-full max-w-6xl grid-cols-[minmax(0,1fr)] content-start items-center gap-6 px-4 pb-10 pt-[max(env(safe-area-inset-top),1rem)] lg:grid-cols-[minmax(0,1fr)_22rem] lg:content-center lg:gap-12 lg:px-8">
+    <main className="mx-auto grid flex-1 w-full max-w-6xl grid-cols-[minmax(0,1fr)] content-start items-center gap-6 px-4 pb-10 pt-[max(env(safe-area-inset-top),1rem)] max-sm:grid-rows-[auto_auto_1fr] max-sm:gap-4 max-sm:pb-0 lg:grid-cols-[minmax(0,1fr)_22rem] lg:content-center lg:gap-12 lg:px-8">
+      {/* Phones, Meet-style: back arrow + meeting name on top, a portrait preview, then a bottom sheet. */}
+      {phone ? (
+        <header className="flex items-center gap-1 pr-12">
+          <Link href="/" aria-label="Back to home" className="flex size-11 shrink-0 items-center justify-center rounded-full">
+            <ArrowLeft size={22} />
+          </Link>
+          <div className="min-w-0 flex-1 text-center">
+            <h1 className="truncate text-[21px] font-semibold">{roomName}</h1>
+            <p role="status" className="text-sm text-muted">
+              {peek ? presenceLabel(peek) : "Ready to join?"}
+            </p>
+          </div>
+          <Button isIconOnly variant="ghost" className="size-11" aria-label="Audio and video settings" onPress={deviceSheet.open}>
+            <EllipsisVertical size={22} />
+          </Button>
+          <DeviceDrawer
+            state={deviceSheet}
+            sections={[
+              { title: "Microphone", kind: "audio", devices: mics, activeId: pre.prefs.micId },
+              ...(sinkSupported
+                ? [{ title: "Speaker", kind: "speaker" as const, devices: speakers, activeId: pre.prefs.speakerId }]
+                : []),
+              { title: "Camera", kind: "video", devices: cams, activeId: pre.prefs.camId },
+            ]}
+            onPick={(kind, id) => void pre.selectDevice(kind, id)}
+          />
+        </header>
+      ) : null}
       {/* Left (top on phones): preview + device pills, like Meet. */}
       <section className="flex min-w-0 flex-col gap-3">
-        <div className="dark relative aspect-[4/3] overflow-hidden rounded-card bg-surface shadow-product sm:aspect-video">
+        <div className="dark relative mx-auto aspect-[3/4] w-[72%] max-w-xs overflow-hidden rounded-[2rem] bg-surface shadow-product sm:aspect-video sm:w-full sm:max-w-none sm:rounded-card">
           <video
             ref={videoRef}
             autoPlay
@@ -171,9 +216,13 @@ export default function PreJoin({
               <p className="absolute inset-0 flex items-center justify-center text-[21px] text-white/90">Camera is starting</p>
             )
           ) : null}
-          <p className="absolute left-4 top-3 text-[15px] font-semibold text-white drop-shadow">{displayName}</p>
+          <p
+            className={`absolute font-semibold text-white drop-shadow ${phone ? "inset-x-0 bottom-1 text-center text-[13px]" : "left-4 top-3 text-[15px]"}`}
+          >
+            {displayName}
+          </p>
           {pre.prefs.mic ? (
-            <div className="glass absolute bottom-4 left-4 flex h-10 items-center rounded-full px-3">
+            <div className="glass absolute right-3 top-3 flex h-10 items-center rounded-full px-3 sm:right-auto sm:top-auto sm:bottom-4 sm:left-4">
               <LevelMeter level={pre.level} />
             </div>
           ) : null}
@@ -200,8 +249,8 @@ export default function PreJoin({
             </Button>
           </div>
         </div>
-        {/* Device pills: stacked on phones (no sideways scroll), one row from sm up. */}
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-3">
+        {/* Device pills: one row from sm up; phones pick devices from the header's ⋯ sheet. */}
+        <div className={phone ? "hidden" : "grid grid-cols-3 gap-2"}>
           <SelectField
             label="Microphone"
             hideLabel
@@ -236,17 +285,21 @@ export default function PreJoin({
         ) : null}
       </section>
 
-      {/* Right (below on phones): one clear action, Meet-style, no card. */}
-      <section className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 text-center">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] leading-[1.14] font-semibold break-words sm:text-[34px]">{roomName}</h1>
-          <p className="text-[17px] text-muted">Ready to join?</p>
-          {peek ? (
-            <p role="status" className="text-[15px] text-muted">
-              {presenceLabel(peek)}
-            </p>
-          ) : null}
-        </div>
+      {/* Right (a bottom sheet on phones): one clear action, Meet-style. */}
+      <section className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 text-center max-sm:-mx-4 max-sm:self-stretch max-sm:w-auto max-sm:max-w-none max-sm:rounded-t-[2rem] max-sm:bg-surface max-sm:px-5 max-sm:pt-3 max-sm:pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+        {phone ? (
+          <span aria-hidden className="h-1 w-10 rounded-full bg-muted/40" />
+        ) : (
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[28px] leading-[1.14] font-semibold break-words sm:text-[34px]">{roomName}</h1>
+            <p className="text-[17px] text-muted">Ready to join?</p>
+            {peek ? (
+              <p role="status" className="text-[15px] text-muted">
+                {presenceLabel(peek)}
+              </p>
+            ) : null}
+          </div>
+        )}
         {isGuest ? (
           <div className="w-full text-left">
             <TextInput label="Your name" value={name} onChange={setName} placeholder="Dana" />
@@ -257,7 +310,15 @@ export default function PreJoin({
             {error}
           </p>
         ) : null}
-        <Button ref={joinRef} variant="primary" size="lg" className="h-14 w-full text-[17px]" isDisabled={!pre.ready} onPress={() => void join()}>
+        <Button
+          ref={joinRef}
+          variant="primary"
+          size="lg"
+          className={`w-full ${phone ? "h-16 rounded-full text-[21px]" : "h-14 text-[17px]"}`}
+          isDisabled={!pre.ready}
+          onPress={() => void join()}
+        >
+          {phone ? <Video size={22} aria-hidden /> : null}
           {askToJoin ? "Ask to join" : "Join now"}
         </Button>
         <div className="flex w-full flex-col gap-3 text-left">
@@ -274,9 +335,39 @@ export default function PreJoin({
             Sign in instead
           </Button>
         ) : null}
-        <Link href="/" className="text-[17px] text-link">
-          Back to home
-        </Link>
+        {link && phone ? (
+          <div className="flex w-full flex-col gap-2 text-left">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Joining information</h2>
+              {"share" in navigator ? (
+                <Button
+                  isIconOnly
+                  variant="ghost"
+                  className="size-11"
+                  aria-label="Share invite"
+                  onPress={() => void navigator.share({ url: link }).catch(() => undefined)}
+                >
+                  <Share2 size={18} />
+                </Button>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-3 rounded-3xl bg-surface-secondary py-3 pl-4 pr-2">
+              <Link2 size={20} aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Meeting link</p>
+                <p className="truncate text-sm text-muted">{link.replace(/^https?:\/\//, "")}</p>
+              </div>
+              <Button isIconOnly variant="ghost" className="size-11" aria-label="Copy meeting link" onPress={() => void copyLink()}>
+                <Copy size={18} />
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {phone ? null : (
+          <Link href="/" className="text-[17px] text-link">
+            Back to home
+          </Link>
+        )}
       </section>
     </main>
   );

@@ -363,7 +363,7 @@ export default function Call({
                 <span className="min-w-0 flex-1 truncate text-sm" suppressHydrationWarning>
                   {typeof window !== "undefined" ? window.location.host : ""}/rooms/{code}
                 </span>
-                <Button isIconOnly variant="ghost" aria-label="Copy meeting link" onPress={() => void copyLink()}>
+                <Button isIconOnly variant="ghost" className="size-11" aria-label="Copy meeting link" onPress={() => void copyLink()}>
                   <Copy size={18} />
                 </Button>
               </div>
@@ -400,6 +400,7 @@ export default function Call({
       </div>
       <div className="absolute inset-x-0 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-30 flex justify-center px-2">
       <Toolbar
+        code={code}
         state={call.localState}
         onToggle={(patch) => call.setMedia(patch)}
         onShare={() => void (call.localState.screen ? call.stopShare() : call.startShare())}
@@ -424,7 +425,6 @@ export default function Call({
         onPickDevice={(kind, id) => void pickDevice(kind, id)}
         compact={narrow}
         onCopyLink={() => void copyLink()}
-        onShortcuts={() => setShortcutsOpen(true)}
       />
       </div>
       <ShortcutsSheet open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />

@@ -15,6 +15,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalHeading,
+  useOverlayState,
 } from "@heroui/react";
 import {
   Lock,
@@ -31,6 +32,8 @@ import {
 import type { MediaState } from "@/lib/socket.io/events";
 import type { DeviceInfo } from "@/lib/webrtc/devices";
 import DeviceMenu from "@/components/call/DeviceMenu";
+import MoreDrawer from "@/components/call/MoreDrawer";
+import DeviceDrawer from "@/components/call/DeviceDrawer";
 
 export default function Toolbar({
   state,
@@ -54,7 +57,7 @@ export default function Toolbar({
   onPickDevice,
   compact,
   onCopyLink,
-  onShortcuts,
+  code,
 }: {
   state: MediaState;
   onToggle: (patch: Partial<MediaState>) => void;
@@ -77,9 +80,41 @@ export default function Toolbar({
   onPickDevice: (kind: "audio" | "video" | "speaker", deviceId: string) => void;
   compact: boolean;
   onCopyLink: () => void;
-  onShortcuts: () => void;
+  /** Meeting code: the phone More sheet shows the link. */
+  code: string;
 }) {
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const more = useOverlayState();
+  const deviceSheet = useOverlayState();
+  const byKind = (k: DeviceInfo["kind"]) => devices.filter((d) => d.kind === k);
+  const endDialog = (
+    <Modal isOpen={confirmEnd} onOpenChange={(v) => !v && setConfirmEnd(false)}>
+      <ModalBackdrop>
+        <ModalContainer>
+          <ModalDialog>
+            <ModalHeader>
+              <ModalHeading>End the meeting for everyone?</ModalHeading>
+            </ModalHeader>
+            <ModalBody>Participants will be disconnected.</ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" onPress={() => setConfirmEnd(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onPress={() => {
+                  setConfirmEnd(false);
+                  onEnd();
+                }}
+              >
+                End meeting
+              </Button>
+            </ModalFooter>
+          </ModalDialog>
+        </ModalContainer>
+      </ModalBackdrop>
+    </Modal>
+  );
   if (compact) {
     return (
       <div className="glass flex items-center gap-2 rounded-full p-2">
@@ -106,26 +141,34 @@ export default function Toolbar({
         <Button variant="danger" className="h-12 px-5" aria-label="Leave" onPress={onLeave}>
           <PhoneOff size={18} /> Leave
         </Button>
-        <DropdownRoot>
-          <Button isIconOnly variant="ghost" className="size-12 bg-white/15 text-white" aria-label="More options">
-            <MoreHorizontal size={18} />
-          </Button>
-          <DropdownPopover>
-            <DropdownMenu
-              onAction={(key) => {
-                if (key === "share") onShare();
-                if (key === "participants") onParticipants();
-                if (key === "copy") onCopyLink();
-                if (key === "shortcuts") onShortcuts();
-              }}
-            >
-              {shareSupported ? <DropdownItem id="share">{sharing ? "Stop sharing" : "Share screen"}</DropdownItem> : null}
-              <DropdownItem id="participants">Participants</DropdownItem>
-              <DropdownItem id="copy">Copy link</DropdownItem>
-              <DropdownItem id="shortcuts">Shortcuts</DropdownItem>
-            </DropdownMenu>
-          </DropdownPopover>
-        </DropdownRoot>
+        <Button isIconOnly variant="ghost" className="size-12 bg-white/15 text-white" aria-label="More options" onPress={more.open}>
+          <MoreHorizontal size={18} />
+        </Button>
+        <MoreDrawer
+          state={more}
+          code={code}
+          shareSupported={shareSupported}
+          sharing={sharing}
+          waitingCount={canAdmit ? waitingCount : 0}
+          isHost={isHost}
+          locked={locked}
+          onShare={onShare}
+          onParticipants={onParticipants}
+          onCopyLink={onCopyLink}
+          onLock={onLock}
+          onEnd={() => setConfirmEnd(true)}
+          onDevices={deviceSheet.open}
+        />
+        <DeviceDrawer
+          state={deviceSheet}
+          sections={[
+            { title: "Microphone", kind: "audio", devices: byKind("audioinput"), activeId: micId },
+            ...(showSpeaker ? [{ title: "Speaker", kind: "speaker" as const, devices: byKind("audiooutput"), activeId: speakerId }] : []),
+            { title: "Camera", kind: "video", devices: byKind("videoinput"), activeId: camId },
+          ]}
+          onPick={onPickDevice}
+        />
+        {endDialog}
       </div>
     );
   }
@@ -230,32 +273,7 @@ export default function Toolbar({
           >
             {locked ? <Lock size={18} /> : <LockOpen size={18} />}
           </Button>
-          <Modal isOpen={confirmEnd} onOpenChange={(v) => !v && setConfirmEnd(false)}>
-            <ModalBackdrop>
-              <ModalContainer>
-                <ModalDialog>
-                  <ModalHeader>
-                    <ModalHeading>End the meeting for everyone?</ModalHeading>
-                  </ModalHeader>
-                  <ModalBody>Participants will be disconnected.</ModalBody>
-                  <ModalFooter>
-                    <Button variant="ghost" onPress={() => setConfirmEnd(false)}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="danger"
-                      onPress={() => {
-                        setConfirmEnd(false);
-                        onEnd();
-                      }}
-                    >
-                      End meeting
-                    </Button>
-                  </ModalFooter>
-                </ModalDialog>
-              </ModalContainer>
-            </ModalBackdrop>
-          </Modal>
+          {endDialog}
         </>
       ) : null}
     </div>
