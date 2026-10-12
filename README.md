@@ -153,7 +153,7 @@ bunx tsc --noEmit && bun run lint
 
 ```bash
 cp .env.example .env   # set POSTGRES_PASSWORD, MINIO_ROOT_PASSWORD, BETTER_AUTH_SECRET, INTERNAL_SECRET, ...
-docker compose up -d   # app on :3000 (migrations applied on boot), Postgres, MinIO, Redis
+docker compose up -d   # app on app:3000 inside the compose network, no host port; route your domain to it (migrations applied on boot), Postgres, MinIO, Redis
 docker compose --profile turn up -d coturn   # optional TURN relay (needs TURN_SECRET)
 ```
 

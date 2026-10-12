@@ -13,8 +13,9 @@ services:
       redis:
         condition: service_healthy
     command: sh -c "bunx prisma migrate deploy && node --import tsx server.ts"
-    ports:
-      - "3000:3000"
+    # no host port: the proxy (Dokploy/Traefik) routes the domain to app:3000; :3000 on the host is Dokploy's UI
+    expose:
+      - "3000"
 
   db:
     image: postgres:18-alpine
