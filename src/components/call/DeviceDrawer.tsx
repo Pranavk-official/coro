@@ -35,9 +35,9 @@ export default function DeviceDrawer({
   const open = sections.find((s) => s.kind === kind);
   return (
     <Drawer state={state}>
-      <DrawerBackdrop>
+      <DrawerBackdrop variant="transparent">
         <DrawerContent placement="bottom">
-          <DrawerDialog>
+          <DrawerDialog className="glass">
             <DrawerHandle />
             <DrawerHeading className="px-4 pt-2 text-[17px]">Audio & video</DrawerHeading>
             <DrawerBody>
@@ -66,9 +66,9 @@ export default function DeviceDrawer({
               </div>
           {/* Inside the first drawer's tree: React Aria treats it as nested and stacks it on top. */}
           <Drawer state={list}>
-            <DrawerBackdrop>
+            <DrawerBackdrop variant="transparent">
               <DrawerContent placement="bottom">
-                <DrawerDialog>
+                <DrawerDialog className="glass">
                   <DrawerHeading className="sr-only">{open?.title ?? "Devices"}</DrawerHeading>
                   <DrawerBody>
                     <div className="flex flex-col gap-1 p-2 pb-[max(env(safe-area-inset-bottom),1rem)]">

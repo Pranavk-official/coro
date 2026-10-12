@@ -286,7 +286,7 @@ export default function PreJoin({
       </section>
 
       {/* Right (a bottom sheet on phones): one clear action, Meet-style. */}
-      <section className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 text-center max-sm:-mx-4 max-sm:self-stretch max-sm:w-auto max-sm:max-w-none max-sm:rounded-t-[2rem] max-sm:bg-surface max-sm:px-5 max-sm:pt-3 max-sm:pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+      <section className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 text-center max-sm:-mx-4 max-sm:self-stretch max-sm:w-auto max-sm:max-w-none max-sm:rounded-t-[2rem] max-sm:glass max-sm:px-5 max-sm:pt-3 max-sm:pb-[max(env(safe-area-inset-bottom),1.5rem)]">
         {phone ? (
           <span aria-hidden className="h-1 w-10 rounded-full bg-muted/40" />
         ) : (
