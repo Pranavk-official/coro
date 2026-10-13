@@ -19,6 +19,7 @@ test("E21 @regression @uat mic+cam off is remembered, one getUserMedia per join"
   await expect(page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 10_000 });
   await page.getByRole("button", { name: "Mute microphone" }).click();
   await page.getByRole("button", { name: "Turn camera off" }).click();
+  await expect(page.getByRole("button", { name: /^Boop the .*'s avatar$/ })).toBeVisible(); // cam off → mascot
   const gum = () => page.evaluate(() => (window as unknown as { __gum: number }).__gum);
   const beforeJoin = await gum(); // dev Strict Mode mounts pre-join twice (2 here, 1 in prod)
   await page.getByRole("button", { name: "Join now" }).click();

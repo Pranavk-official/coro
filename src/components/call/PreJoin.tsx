@@ -209,12 +209,11 @@ export default function PreJoin({
             aria-label="Your camera preview"
             className={`h-full w-full object-cover [transform:scaleX(-1)] ${pre.prefs.cam ? "" : "invisible"}`}
           />
+          {/* Camera off: always the mascot here (not the profile photo), even before media settles. */}
           {!pre.prefs.cam ? (
-            pre.ready ? (
-              <PersonAvatar seed={session?.user.id ?? "you"} name={displayName} image={session?.user.image} />
-            ) : (
-              <p className="absolute inset-0 flex items-center justify-center text-[21px] text-white/90">Camera is starting</p>
-            )
+            <PersonAvatar seed={session?.user.id ?? "you"} name={displayName} />
+          ) : !pre.ready ? (
+            <p className="absolute inset-0 flex items-center justify-center text-[21px] text-white/90">Camera is starting</p>
           ) : null}
           <p
             className={`absolute font-semibold text-white drop-shadow ${phone ? "inset-x-0 bottom-1 text-center text-[13px]" : "left-4 top-3 text-[15px]"}`}
