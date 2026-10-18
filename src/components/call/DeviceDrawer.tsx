@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { useOverlayState } from "@heroui/react";
 import { Check, ChevronRight, Mic, Video, Volume2, X } from "lucide-react";
 import type { DeviceKind, DeviceSection } from "@/components/call/DeviceMenu";
-import { Drawer, DrawerContent, DrawerNested, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 const ICON = { audio: Mic, speaker: Volume2, video: Video } as const;
 const row = "flex min-h-14 w-full items-center gap-4 rounded-2xl px-4 text-left hover:bg-white/10";
@@ -18,21 +18,17 @@ export default function DeviceDrawer({
   state,
   sections,
   onPick,
-  nested = false,
 }: {
   state: ReturnType<typeof useOverlayState>;
   sections: DeviceSection[];
   onPick: (kind: DeviceKind, deviceId: string) => void;
-  /** Rendered inside another drawer (the call's More sheet): stack on top of it. */
-  nested?: boolean;
 }) {
   const [kind, setKind] = useState<DeviceKind | null>(null);
   // Separate from `kind` so the list keeps its rows while the stacked sheet animates out.
   const [listOpen, setListOpen] = useState(false);
   const open = sections.find((s) => s.kind === kind);
-  const Root = nested ? DrawerNested : Drawer;
   return (
-    <Root open={state.isOpen} onOpenChange={state.setOpen}>
+    <Drawer open={state.isOpen} onOpenChange={(v) => state.setOpen(v)}>
       <DrawerContent className="glass">
         <DrawerTitle className="px-4 pt-2 text-[17px]">Audio & video</DrawerTitle>
         <div className={list}>
@@ -58,7 +54,7 @@ export default function DeviceDrawer({
             );
           })}
         </div>
-        <DrawerNested open={listOpen} onOpenChange={setListOpen}>
+        <Drawer open={listOpen} onOpenChange={(v) => setListOpen(v)}>
           <DrawerContent className="glass">
             <DrawerTitle className="sr-only">{open?.title ?? "Devices"}</DrawerTitle>
             <div className={list}>
@@ -89,8 +85,8 @@ export default function DeviceDrawer({
               </button>
             </div>
           </DrawerContent>
-        </DrawerNested>
+        </Drawer>
       </DrawerContent>
-    </Root>
+    </Drawer>
   );
 }

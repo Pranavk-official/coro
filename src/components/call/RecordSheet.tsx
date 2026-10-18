@@ -5,7 +5,7 @@ import { Circle } from "lucide-react";
 import { pickMime } from "@/lib/media-recorder/recorder";
 import { getPrefs, setPrefs } from "@/lib/utils/prefs";
 import type { RecordOptions } from "@/hooks/use-recorder";
-import { Drawer, DrawerContent, DrawerNested, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 type Props = {
   open: boolean;
@@ -77,17 +77,16 @@ function RecordForm({ onOpenChange, onStart, title }: Props & { title: ReactNode
   );
 }
 
-/** Phone: stacks over the More sheet (`nested`) instead of replacing it. */
-export function RecordSheet({ nested = false, ...props }: Props & { nested?: boolean }) {
-  const Root = nested ? DrawerNested : Drawer;
+/** Phone sheet; rendered inside the More sheet, so it stacks on it. */
+export function RecordSheet(props: Props) {
   return (
-    <Root open={props.open} onOpenChange={props.onOpenChange}>
+    <Drawer open={props.open} onOpenChange={(v) => props.onOpenChange(v)}>
       <DrawerContent className="glass">
         <div className="overflow-y-auto p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
           <RecordForm {...props} title={<DrawerTitle className="text-[17px]">Record this call</DrawerTitle>} />
         </div>
       </DrawerContent>
-    </Root>
+    </Drawer>
   );
 }
 

@@ -6,9 +6,13 @@ test("E29 @uat 375×667 call: compact toolbar, no horizontal scroll; desktop ? s
   const page = await phone.newPage();
   const room = await createRoomAs(phone.request, { name: "E29", kind: "instant" });
   await enterCall(page, room.code);
-  for (const name of ["Mute microphone", "Turn camera off", "Leave", "More options"]) {
+  for (const name of ["Mute microphone", "Turn camera off", "Leave options", "More options"]) {
     await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
   }
+  // Host on a phone: Leave offers End for everyone right there, not only under ⋯.
+  await page.getByRole("button", { name: "Leave options" }).click();
+  await expect(page.getByRole("menuitem", { name: "End for everyone" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Share screen" })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await phone.close();

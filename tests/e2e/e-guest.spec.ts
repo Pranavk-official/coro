@@ -123,3 +123,25 @@ test("E41 @regression guest is signed out once the meeting ends and they land ho
   await host.ctx.close();
   await guestCtx.close();
 });
+
+test("E45 @regression phone: More → Participants stacks on More; Admit from the list lets the guest in", async ({ browser }) => {
+  const host = await asRole(browser, "host");
+  await host.page.setViewportSize({ width: 375, height: 740 });
+  const room = await createRoomAs(host.ctx.request, { name: "E45", kind: "instant", allowGuests: true });
+  await enterCall(host.page, room.code);
+  const guestCtx = await browser.newContext();
+  const guest = await guestCtx.newPage();
+  await joinAsGuest(guest, room.code, "Dana");
+  await expect(host.page.getByText("Dana wants to join").first()).toBeVisible({ timeout: 15000 });
+
+  await host.page.getByRole("button", { name: "More options" }).click();
+  await host.page.getByRole("button", { name: /^Participants/ }).click();
+  await expect(host.page.getByText("Waiting to join · 1")).toBeVisible();
+  await expect(host.page.getByText("Joining information")).toBeVisible(); // stacked over More, not replacing it
+  await host.page.getByRole("listitem").filter({ hasText: "Dana" }).getByRole("button", { name: "Admit" }).click();
+  await expect(guest.getByRole("button", { name: /^Leave/ }).first()).toBeVisible({ timeout: 5000 });
+  await expect(host.page.getByText("In call · 2/10")).toBeVisible();
+  expect(await host.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await host.ctx.close();
+  await guestCtx.close();
+});

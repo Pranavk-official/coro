@@ -62,7 +62,7 @@ export default function MoreDrawer({
                 <MonitorUp size={20} /> {sharing ? "Stop sharing" : "Share screen"}
               </Button>
             ) : null}
-            <Button variant="ghost" className={`${tile} text-white ${shareSupported ? "" : "col-span-2"}`} onPress={run(onParticipants)}>
+            <Button variant="ghost" className={`${tile} text-white ${shareSupported ? "" : "col-span-2"}`} onPress={onParticipants}>
               <Users size={20} /> {waitingCount > 0 ? `Participants (${waitingCount} waiting)` : "Participants"}
             </Button>
             {onRecord ? (

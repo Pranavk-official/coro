@@ -4,146 +4,188 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
-  Chip,
   Drawer,
   DrawerBackdrop,
   DrawerBody,
   DrawerCloseTrigger,
-  DrawerContent,
+  DrawerContent as SideContent,
   DrawerDialog,
   DrawerHeader,
   DrawerHeading,
-  DrawerHandle,
   type useOverlayState,
 } from "@heroui/react";
-import { Crown, MicOff, MonitorUp } from "lucide-react";
+import { Check, Crown, MicOff, MonitorUp, MonitorX, UserX, X } from "lucide-react";
 import type { Peer } from "@/lib/socket.io/events";
 import type { RemotePeer } from "@/hooks/use-call";
+import { initials } from "@/components/call/VideoTile";
+import { Drawer as Sheet, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-export default function ParticipantsDrawer({
-  state,
-  waiting,
-  peers,
-  canAdmit,
-  isHost,
-  selfId,
-  maxPeers,
-  side = false,
-  onAdmit,
-  onDeny,
-  onMute,
-  onRemove,
-  onStopShare,
-}: {
+type Props = {
   state: ReturnType<typeof useOverlayState>;
   waiting: Peer[];
   peers: RemotePeer[];
+  /** You: the list starts with your own row. */
+  self: { name: string; image: string | null };
   canAdmit: boolean;
   isHost: boolean;
-  selfId: string | null;
   maxPeers: number;
-  /** Wide screens: dock on the right instead of a bottom sheet. */
-  side?: boolean;
   onAdmit: (id: string) => void;
   onDeny: (id: string) => void;
   onMute: (id: string) => void;
   onRemove: (id: string) => void;
   onStopShare: (id: string) => void;
+};
+
+const icon = "size-9 min-w-0 text-white/80 hover:text-white";
+
+function Person({
+  name,
+  image,
+  sub,
+  host,
+  children,
+}: {
+  name: string;
+  image: string | null;
+  sub?: string;
+  host?: boolean;
+  children?: React.ReactNode;
 }) {
+  return (
+    <li className="flex min-h-14 items-center gap-3 rounded-2xl px-2 hover:bg-white/5">
+      <Avatar size="sm">
+        <AvatarImage src={image ?? undefined} />
+        <AvatarFallback>{initials(name)}</AvatarFallback>
+      </Avatar>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 truncate text-[15px] font-medium text-foreground">
+          {name}
+          {host ? <Crown size={14} className="shrink-0 text-warning" aria-label="Host" /> : null}
+        </span>
+        {sub ? <span className="block truncate text-[13px] text-muted">{sub}</span> : null}
+      </span>
+      <span className="flex shrink-0 items-center gap-1">{children}</span>
+    </li>
+  );
+}
+
+function Heading({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between px-2">
+      <h3 className="text-[13px] font-semibold tracking-wide text-muted uppercase">{children}</h3>
+      {action}
+    </div>
+  );
+}
+
+/** Waiting room first (admit / deny), then everyone in the call; host controls per person. */
+function ParticipantsBody(p: Omit<Props, "state">) {
+  return (
+    <div className="flex flex-col gap-5 overflow-y-auto p-3 pb-[max(env(safe-area-inset-bottom),1rem)]" aria-live="polite">
+      {p.canAdmit && p.waiting.length > 0 ? (
+        <section className="flex flex-col gap-1">
+          <Heading
+            action={
+              p.waiting.length > 1 ? (
+                <Button size="sm" variant="secondary" className="h-7 px-3 text-[13px]" onPress={() => p.waiting.forEach((w) => p.onAdmit(w.id))}>
+                  Admit all
+                </Button>
+              ) : null
+            }
+          >
+            Waiting to join · {p.waiting.length}
+          </Heading>
+          <ul className="flex flex-col">
+            {p.waiting.map((w) => (
+              <Person key={w.id} name={w.name} image={w.image} sub="Guest">
+                <Button isIconOnly size="sm" variant="ghost" className={`${icon} size-8`} aria-label={`Deny ${w.name}`} onPress={() => p.onDeny(w.id)}>
+                  <X size={16} />
+                </Button>
+                <Button isIconOnly size="sm" variant="primary" className="size-8 min-w-0" aria-label={`Admit ${w.name}`} onPress={() => p.onAdmit(w.id)}>
+                  <Check size={16} />
+                </Button>
+              </Person>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <section className="flex flex-col gap-1">
+        <Heading>
+          In call · {p.peers.length + 1}/{p.maxPeers}
+        </Heading>
+        <ul className="flex flex-col">
+          <Person name={p.self.name} image={p.self.image} sub="You" host={p.isHost} />
+          {p.peers.map(({ info }) => (
+            <Person
+              key={info.id}
+              name={info.name}
+              image={info.image}
+              host={info.isHost}
+              sub={[info.isGuest ? "Guest" : null, info.state.screen ? "Presenting" : null, info.state.recording ? "Recording" : null]
+                .filter(Boolean)
+                .join(" · ")}
+            >
+              {info.state.screen && !p.isHost ? <MonitorUp size={16} className="mx-2 text-white/70" aria-label="Presenting" /> : null}
+              {p.isHost ? (
+                <>
+                  {info.state.screen ? (
+                    <Button isIconOnly size="sm" variant="ghost" className={icon} aria-label={`Stop ${info.name}'s presentation`} onPress={() => p.onStopShare(info.id)}>
+                      <MonitorX size={18} />
+                    </Button>
+                  ) : null}
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="ghost"
+                    className={icon}
+                    aria-label={info.state.mic ? `Mute ${info.name}` : `${info.name} is muted`}
+                    isDisabled={!info.state.mic}
+                    onPress={() => p.onMute(info.id)}
+                  >
+                    <MicOff size={18} />
+                  </Button>
+                  <Button isIconOnly size="sm" variant="ghost" className={`${icon} hover:text-danger`} aria-label={`Remove ${info.name}`} onPress={() => p.onRemove(info.id)}>
+                    <UserX size={18} />
+                  </Button>
+                </>
+              ) : !info.state.mic ? (
+                <MicOff size={16} className="mx-2 text-white/70" aria-label="Muted" />
+              ) : null}
+            </Person>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+/** Phone (`nested`): a sheet rendered inside More, so it stacks on it. Desktop: docked on the right. */
+export default function ParticipantsDrawer({ state, nested = false, ...body }: Props & { nested?: boolean }) {
+  if (nested) {
+    return (
+      <Sheet open={state.isOpen} onOpenChange={(v) => state.setOpen(v)}>
+        <DrawerContent className="glass">
+          <DrawerTitle className="px-5 pt-3 text-[17px]">Participants</DrawerTitle>
+          <ParticipantsBody {...body} />
+        </DrawerContent>
+      </Sheet>
+    );
+  }
   return (
     <Drawer state={state}>
       {/* Transparent backdrop: the call stays fully visible behind the glass panel. */}
       <DrawerBackdrop variant="transparent">
-        <DrawerContent placement={side ? "right" : "bottom"}>
-          <DrawerDialog className="glass">
-            {side ? null : <DrawerHandle />}
+        <SideContent placement="right">
+          <DrawerDialog className="glass w-[min(24rem,100vw)]">
             <DrawerCloseTrigger />
             <DrawerHeader>
               <DrawerHeading>Participants</DrawerHeading>
             </DrawerHeader>
-            <DrawerBody>
-        <div className="flex flex-col gap-4 p-4" aria-live="polite">
-          {canAdmit ? (
-            <section className="flex flex-col gap-2">
-              <h2 className="font-semibold">Waiting ({waiting.length})</h2>
-              {waiting.length === 0 ? (
-                <p className="text-sm text-muted">Nobody waiting.</p>
-              ) : (
-                waiting.map((w) => (
-                  <div key={w.id} className="flex items-center gap-2">
-                    <Avatar size="sm">
-                      <AvatarImage src={w.image ?? undefined} />
-                      <AvatarFallback>{initials(w.name)}</AvatarFallback>
-                    </Avatar>
-                    <span className="flex-1 truncate text-sm">
-                      {w.name} (guest)
-                    </span>
-                    <Button size="sm" variant="primary" onPress={() => onAdmit(w.id)}>
-                      Admit
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => onDeny(w.id)}>
-                      Deny
-                    </Button>
-                  </div>
-                ))
-              )}
-            </section>
-          ) : null}
-          <section className="flex flex-col gap-2">
-            <h2 className="font-semibold">
-              In call ({peers.length + 1}/{maxPeers})
-            </h2>
-            {peers.map((p) => (
-              <div key={p.info.id} className="flex items-center gap-2">
-                <Avatar size="sm">
-                  <AvatarImage src={p.info.image ?? undefined} />
-                  <AvatarFallback>{initials(p.info.name)}</AvatarFallback>
-                </Avatar>
-                <span className="flex-1 truncate text-sm">
-                  {p.info.id === selfId ? "You" : p.info.name}
-                  {p.info.isHost ? " 👑" : ""}
-                  {p.info.isGuest ? " (guest)" : ""}
-                </span>
-                {!p.info.state.mic && <MicOff size={14} aria-label="Muted" />}
-                {p.info.state.screen && <MonitorUp size={14} aria-label="Presenting" />}
-                {isHost && p.info.id !== selfId ? (
-                  <>
-                    {p.info.state.screen ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        aria-label={`Stop ${p.info.name}'s presentation`}
-                        onPress={() => onStopShare(p.info.id)}
-                      >
-                        Stop presenting
-                      </Button>
-                    ) : null}
-                    <Button size="sm" variant="ghost" onPress={() => onMute(p.info.id)}>
-                      Mute
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => onRemove(p.info.id)}>
-                      Remove
-                    </Button>
-                  </>
-                ) : null}
-                {p.info.isHost && <Crown size={14} className="text-warning" aria-label="Host" />}
-              </div>
-            ))}
-          </section>
-          <Chip size="sm">{peers.length + 1} in call</Chip>
-        </div>
+            <DrawerBody className="p-0">
+              <ParticipantsBody {...body} />
             </DrawerBody>
           </DrawerDialog>
-        </DrawerContent>
+        </SideContent>
       </DrawerBackdrop>
     </Drawer>
   );

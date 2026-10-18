@@ -14,7 +14,7 @@ async function hostAndMember(browser: Browser, name: string) {
 test("E12 @regression @uat host mutes member → member mic off + toast", async ({ browser }) => {
   const { host, member, close } = await hostAndMember(browser, "E12");
   await host.page.getByRole("button", { name: /^Participants/ }).click();
-  await host.page.getByRole("button", { name: "Mute", exact: true }).click();
+  await host.page.getByRole("button", { name: `Mute ${NAMES.member}` }).click();
   await expect(member.page.getByRole("button", { name: "Unmute microphone" })).toBeVisible({ timeout: 3000 });
   await expect(member.page.getByText("Muted by host")).toBeVisible();
   await close();
@@ -23,7 +23,7 @@ test("E12 @regression @uat host mutes member → member mic off + toast", async 
 test("E13 @regression @uat host removes member → removed screen, host alone", async ({ browser }) => {
   const { host, member, close } = await hostAndMember(browser, "E13");
   await host.page.getByRole("button", { name: /^Participants/ }).click();
-  await host.page.getByRole("button", { name: "Remove" }).click();
+  await host.page.getByRole("button", { name: `Remove ${NAMES.member}` }).click();
   await expect(member.page.getByRole("heading", { name: "You were removed by the host." })).toBeVisible({ timeout: 3000 });
   await expect(remoteTiles(host.page)).toHaveCount(0, { timeout: 3000 });
   await close();

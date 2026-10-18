@@ -127,11 +127,8 @@ export default function Call({
   });
   const [recordOpen, setRecordOpen] = useState(false);
   const isGuest = (session?.user as { isAnonymous?: boolean } | undefined)?.isAnonymous ?? true;
-  // Tab capture: desktop Chromium/Firefox/Safari; phones have no getDisplayMedia.
-  const canRecord =
-    !isGuest &&
-    typeof MediaRecorder !== "undefined" &&
-    typeof (navigator.mediaDevices as { getDisplayMedia?: unknown } | undefined)?.getDisplayMedia === "function";
+  // Silent composite: needs MediaRecorder + canvas.captureStream (phones included).
+  const canRecord = !isGuest && typeof MediaRecorder !== "undefined" && "captureStream" in HTMLCanvasElement.prototype;
   const toggleRecord = () => (recorder.recording ? void recorder.stop() : setRecordOpen((o) => !o));
 
   async function pickDevice(kind: "audio" | "video" | "speaker", deviceId: string) {
@@ -355,6 +352,23 @@ export default function Call({
   }
 
   const remotes = [...call.peers.values()];
+  const participants = (nested: boolean) => (
+    <ParticipantsDrawer
+      nested={nested}
+      state={drawer}
+      waiting={call.waiting}
+      peers={remotes}
+      self={{ name: session?.user.name || "You", image: session?.user.image ?? null }}
+      canAdmit={call.canAdmit}
+      isHost={call.isHost}
+      maxPeers={call.maxPeers}
+      onAdmit={(id) => call.admit(id)}
+      onDeny={(id) => call.deny(id)}
+      onMute={(id) => call.mute(id)}
+      onRemove={(id) => call.kick(id)}
+      onStopShare={(id) => call.stopPeerShare(id)}
+    />
+  );
   const shareSupported =
     typeof navigator !== "undefined" &&
     typeof (navigator.mediaDevices as { getDisplayMedia?: unknown } | undefined)?.getDisplayMedia ===
@@ -463,6 +477,7 @@ export default function Call({
         onPickDevice={(kind, id) => void pickDevice(kind, id)}
         compact={narrow}
         onCopyLink={() => void copyLink()}
+        moreSheet={narrow ? { node: participants(true), open: drawer.isOpen } : undefined}
         record={
           canRecord
             ? {
@@ -481,21 +496,7 @@ export default function Call({
       />
       </div>
       <ShortcutsSheet open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      <ParticipantsDrawer
-        state={drawer}
-        waiting={call.waiting}
-        peers={remotes}
-        canAdmit={call.canAdmit}
-        isHost={call.isHost}
-        selfId={getSocket().id ?? null}
-        maxPeers={call.maxPeers}
-        side={!narrow}
-        onAdmit={(id) => call.admit(id)}
-        onDeny={(id) => call.deny(id)}
-        onMute={(id) => call.mute(id)}
-        onRemove={(id) => call.kick(id)}
-        onStopShare={(id) => call.stopPeerShare(id)}
-      />
+      {narrow ? null : participants(false)}
     </main>
   );
 }

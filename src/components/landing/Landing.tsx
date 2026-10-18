@@ -173,6 +173,7 @@ const PANELS: { tab: string; lines: Line[] }[] = [
       ["Send it anywhere: chat, mail, calendar"],
       ["Someone knocks → Admit or Deny", "accent"],
       ["Lock the room once everyone's in"],
+      ["Record → saved to your device", "accent"],
       ["Mute, remove, or end for all", "muted"],
     ],
   },
@@ -185,6 +186,7 @@ const PANELS: { tab: string; lines: Line[] }[] = [
       ["Check camera and mic"],
       ["Ask to join", "accent"],
       ["You're in. No account.", "ok"],
+      ["Someone records? You see REC.", "muted"],
     ],
   },
 ];
@@ -203,7 +205,8 @@ function HowItWorks() {
           <span className="text-accent">privacy and simplicity.</span>
         </h2>
         <p className="max-w-xl text-[17px] text-foreground/80">
-          You choose who gets in. Video goes straight between browsers, not through a recording server.
+          You choose who gets in. Video goes straight between browsers, and recordings save to your own device, never
+          our servers.
         </p>
       </div>
       <div className="mx-auto mt-12 grid max-w-5xl gap-4 md:grid-cols-[1.25fr_1fr]">
@@ -261,7 +264,13 @@ const PLANS = [
     blurb: "For people who run meetings.",
     price: "$0",
     featured: true,
-    features: ["Instant, later or scheduled", "Waiting room and password", "Screen share and pinning", "Up to 10 people per room"],
+    features: [
+      "Instant, later or scheduled",
+      "Waiting room and password",
+      "Screen share and pinning",
+      "Record to your device, WebM or MP4",
+      "Up to 10 people per room",
+    ],
     cta: <StartCta />,
   },
   {
@@ -322,6 +331,10 @@ const FAQ = [
   ["How many people fit?", "Up to 10 per room."],
   ["Can I share my screen?", "Yes, from any desktop browser that supports it."],
   ["Can I schedule ahead?", "Yes: pick a time, get a link, add it to your calendar."],
+  [
+    "Can I record a call?",
+    "Yes, once you're signed in. One tap records everyone's video and audio, plus any screen share, and saves it to your device as WebM or MP4. Everyone in the room sees a REC badge while you record.",
+  ],
   ["What do I need?", "A recent browser, a camera and a mic. You choose devices before you join."],
 ];
 

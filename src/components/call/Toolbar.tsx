@@ -62,6 +62,7 @@ export default function Toolbar({
   onCopyLink,
   code,
   record,
+  moreSheet,
 }: {
   state: MediaState;
   onToggle: (patch: Partial<MediaState>) => void;
@@ -86,6 +87,8 @@ export default function Toolbar({
   onCopyLink: () => void;
   /** Meeting code: the phone More sheet shows the link. */
   code: string;
+  /** Phone: another sheet stacked on More (participants); `open` brings More up first. */
+  moreSheet?: { node: React.ReactNode; open: boolean };
   /** Absent for guests / browsers that can't record (spec 003 FR10). */
   record?: {
     startedAt: number | null;
@@ -101,11 +104,11 @@ export default function Toolbar({
   const more = useOverlayState();
   const deviceSheet = useOverlayState();
   const byKind = (k: DeviceInfo["kind"]) => devices.filter((d) => d.kind === k);
-  const recordOpen = record?.open ?? false;
-  // Phone: the record sheet stacks on More, so a sheet opened without it (R key) brings More up first.
+  const stackedOpen = (record?.open ?? false) || (moreSheet?.open ?? false);
+  // Phone: record + participants sheets stack on More, so opening one without it (R / P key, admit banner) brings More up first.
   useEffect(() => {
-    if (compact && recordOpen) more.open();
-  }, [compact, recordOpen, more]);
+    if (compact && stackedOpen) more.open();
+  }, [compact, stackedOpen, more]);
   const button = record ? { startedAt: record.startedAt, saving: record.saving, onPress: record.onPress } : null;
   const endDialog = (
     <Modal isOpen={confirmEnd} onOpenChange={(v) => !v && setConfirmEnd(false)}>
@@ -135,6 +138,29 @@ export default function Toolbar({
       </ModalBackdrop>
     </Modal>
   );
+  // Host: Leave asks "Leave / End for everyone" on every screen size (phones too, not only under ⋯).
+  const leaveButton = isHost ? (
+    <DropdownRoot>
+      <Button variant="danger" className="h-12 px-5" aria-label="Leave options">
+        <PhoneOff size={18} /> Leave
+      </Button>
+      <DropdownPopover>
+        <DropdownMenu
+          onAction={(key) => {
+            if (key === "leave") onLeave();
+            if (key === "end") setConfirmEnd(true);
+          }}
+        >
+          <DropdownItem id="leave">Leave</DropdownItem>
+          <DropdownItem id="end">End for everyone</DropdownItem>
+        </DropdownMenu>
+      </DropdownPopover>
+    </DropdownRoot>
+  ) : (
+    <Button variant="danger" className="h-12 px-5" aria-label="Leave" onPress={onLeave}>
+      <PhoneOff size={18} /> Leave
+    </Button>
+  );
   if (compact) {
     return (
       <div className="glass flex items-center gap-2 rounded-full p-2">
@@ -159,9 +185,7 @@ export default function Toolbar({
           {state.cam ? <Video size={18} /> : <VideoOff size={18} />}
         </Button>
         {button && button.startedAt !== null ? <RecordButton {...button} /> : null}
-        <Button variant="danger" className="h-12 px-5" aria-label="Leave" onPress={onLeave}>
-          <PhoneOff size={18} /> Leave
-        </Button>
+        {leaveButton}
         <Button isIconOnly variant="ghost" className="size-12 bg-white/15 text-white" aria-label="More options" onPress={more.open}>
           <MoreHorizontal size={18} />
         </Button>
@@ -181,9 +205,9 @@ export default function Toolbar({
           onDevices={deviceSheet.open}
           onRecord={record && record.startedAt === null ? record.onPress : undefined}
         >
+          {moreSheet?.node}
           {record ? (
             <RecordSheet
-              nested
               open={record.open}
               onOpenChange={record.onOpenChange}
               onStart={(opts) => {
@@ -193,7 +217,6 @@ export default function Toolbar({
             />
           ) : null}
           <DeviceDrawer
-            nested
             state={deviceSheet}
             sections={[
               { title: "Microphone", kind: "audio", devices: byKind("audioinput"), activeId: micId },
@@ -279,28 +302,7 @@ export default function Toolbar({
           </span>
         ) : null}
       </Button>
-      {isHost ? (
-        <DropdownRoot>
-          <Button variant="danger" className="h-12 px-5" aria-label="Leave options">
-            <PhoneOff size={18} /> Leave
-          </Button>
-          <DropdownPopover>
-            <DropdownMenu
-              onAction={(key) => {
-                if (key === "leave") onLeave();
-                if (key === "end") setConfirmEnd(true);
-              }}
-            >
-              <DropdownItem id="leave">Leave</DropdownItem>
-              <DropdownItem id="end">End for everyone</DropdownItem>
-            </DropdownMenu>
-          </DropdownPopover>
-        </DropdownRoot>
-      ) : (
-        <Button variant="danger" className="h-12 px-5" aria-label="Leave" onPress={onLeave}>
-          <PhoneOff size={18} /> Leave
-        </Button>
-      )}
+      {leaveButton}
       {isHost ? (
         <>
           <Button
