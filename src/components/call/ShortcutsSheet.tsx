@@ -18,6 +18,7 @@ const SHORTCUTS: [string, string][] = [
   ["P", "Open participants"],
   ["C", "Copy meeting link"],
   ["L", "Lock / unlock room (host)"],
+  ["R", "Start / stop recording"],
   ["?", "This sheet"],
 ];
 

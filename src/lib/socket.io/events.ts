@@ -1,7 +1,7 @@
 import type { ErrorCode } from "@/types/api/error";
 
-/** `screenId`: stream id of the sender's screen share (spec 007), so peers tell screen from camera by id. */
-export type MediaState = { mic: boolean; cam: boolean; screen: boolean; screenId?: string };
+/** `screenId`: stream id of the sender's screen share (spec 007), so peers tell screen from camera by id. `recording`: REC badge (spec 003 FR4). */
+export type MediaState = { mic: boolean; cam: boolean; screen: boolean; screenId?: string; recording?: boolean };
 
 export type Peer = {
   id: string;

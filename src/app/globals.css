@@ -302,7 +302,9 @@ h3 {
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   pointer-events: none;
 }
-:is(.card, .popover, .dropdown__popover, .select__popover, .modal__dialog, .drawer__dialog, .toast):hover {
+/* Not popovers: a click inside closes them, exit sets pointer-events:none, hover ends mid-transition, the
+   cancelled `--glass-angle` transition leaves react-aria waiting → popover stuck open (Start recording). */
+:is(.card, .modal__dialog, .drawer__dialog, .toast):hover {
   --glass-angle: 255deg;
 }
 

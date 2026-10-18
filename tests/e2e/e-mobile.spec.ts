@@ -66,6 +66,7 @@ test("E44 @regression phone devices: ⋯ → Audio & video → stacked list pick
   await page.getByRole("button", { name: "More options" }).click();
   await page.getByRole("button", { name: "Audio & video" }).click();
   await expect(page.getByRole("button", { name: /^Microphone/ })).toBeVisible();
+  await expect(page.getByText("Joining information")).toBeVisible(); // stacked over More, not replacing it
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await phone.close();
 });

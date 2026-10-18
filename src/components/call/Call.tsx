@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, useOverlayState } from "@heroui/react";
 import { Copy, Share2 } from "lucide-react";
@@ -16,6 +16,7 @@ import {
 } from "@/lib/webrtc/devices";
 import { errorCopy } from "@/lib/utils/error-copy";
 import { useCall } from "@/hooks/use-call";
+import { useRecorder } from "@/hooks/use-recorder";
 import RoomStatus from "@/components/call/RoomStatus";
 import WaitingRoom from "@/components/call/WaitingRoom";
 import AdmitBanner from "@/components/call/AdmitBanner";
@@ -117,6 +118,21 @@ export default function Call({
     initialState,
     initialScreen,
   });
+  const { setMedia } = call;
+  const callRef = useRef<HTMLElement>(null);
+  const recorder = useRecorder({
+    code,
+    root: useCallback(() => callRef.current, []),
+    onChange: useCallback((recording: boolean) => setMedia({ recording }), [setMedia]),
+  });
+  const [recordOpen, setRecordOpen] = useState(false);
+  const isGuest = (session?.user as { isAnonymous?: boolean } | undefined)?.isAnonymous ?? true;
+  // Tab capture: desktop Chromium/Firefox/Safari; phones have no getDisplayMedia.
+  const canRecord =
+    !isGuest &&
+    typeof MediaRecorder !== "undefined" &&
+    typeof (navigator.mediaDevices as { getDisplayMedia?: unknown } | undefined)?.getDisplayMedia === "function";
+  const toggleRecord = () => (recorder.recording ? void recorder.stop() : setRecordOpen((o) => !o));
 
   async function pickDevice(kind: "audio" | "video" | "speaker", deviceId: string) {
     if (kind === "speaker") {
@@ -196,6 +212,9 @@ export default function Call({
         case "l":
           if (call.isHost) call.setLock(!call.locked);
           break;
+        case "r":
+          if (canRecord) toggleRecord();
+          break;
         case "?":
           setShortcutsOpen(true);
           break;
@@ -207,7 +226,7 @@ export default function Call({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [call.localState.mic, call.localState.cam, call.localState.screen, call.isHost, call.locked]);
+  }, [call.localState.mic, call.localState.cam, call.localState.screen, call.isHost, call.locked, canRecord, recorder.recording]);
 
   const prevPeers = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -224,6 +243,22 @@ export default function Call({
     prevPeers.current = ids;
   }, [call.peers]);
 
+  const prevRecording = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const now = new Set([...call.peers.values()].filter((p) => p.info.state.recording).map((p) => p.info.id));
+    for (const id of now) {
+      if (!prevRecording.current.has(id)) {
+        notify(`rec-${id}`, { title: `${call.peers.get(id)?.info.name ?? "Someone"} started recording`, variant: "warning" });
+      }
+    }
+    for (const id of prevRecording.current) {
+      if (!now.has(id) && call.peers.has(id)) {
+        notify(`rec-${id}`, { title: `${call.peers.get(id)?.info.name ?? "Someone"} stopped recording`, variant: "default" });
+      }
+    }
+    prevRecording.current = now;
+  }, [call.peers]);
+
   const prevWaiting = useRef<Set<string>>(new Set());
   useEffect(() => {
     for (const w of call.waiting) {
@@ -236,6 +271,7 @@ export default function Call({
 
   useEffect(() => {
     if (call.status.kind === "failed") {
+      void recorder.stop(); // ended / kicked / moved: save what we have
       stream?.getTracks().forEach((t) => t.stop());
       if (call.status.error !== "denied" && call.status.error !== "kicked" && call.status.error !== "moved" && call.status.error !== "ended") {
         notify("call-error", { title: errorCopy(call.status.error), variant: "danger" });
@@ -325,7 +361,7 @@ export default function Call({
       "function";
 
   return (
-    <main className="dark fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
+    <main ref={callRef} className="dark fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
       {call.canAdmit ? (
         <AdmitBanner
           waiting={call.waiting}
@@ -350,7 +386,7 @@ export default function Call({
             Camera or microphone blocked. Allow access in your browser and reload.
           </p>
         ) : null}
-        {call.localState.screen ? (
+        {call.localState.screen && remotes.length === 0 ? (
           <PresentingBanner stream={call.localScreen} onStop={() => void call.stopShare()} />
         ) : null}
         {remotes.length === 0 ? (
@@ -388,6 +424,8 @@ export default function Call({
             speakingId={call.speakingId ?? undefined}
             followedId={call.followedId}
             onPin={(id) => call.togglePin(id)}
+            localScreen={call.localState.screen ? call.localScreen : null}
+            onStopShare={() => void call.stopShare()}
           />
         )}
       </div>
@@ -425,6 +463,21 @@ export default function Call({
         onPickDevice={(kind, id) => void pickDevice(kind, id)}
         compact={narrow}
         onCopyLink={() => void copyLink()}
+        record={
+          canRecord
+            ? {
+                startedAt: recorder.startedAt,
+                saving: recorder.saving,
+                onPress: toggleRecord,
+                open: recordOpen,
+                onOpenChange: setRecordOpen,
+                onStart: (opts) => {
+                  setRecordOpen(false);
+                  void recorder.start(opts);
+                },
+              }
+            : undefined
+        }
       />
       </div>
       <ShortcutsSheet open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />

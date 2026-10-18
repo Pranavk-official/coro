@@ -5,6 +5,8 @@ export type Prefs = {
   camId: string | null;
   speakerId: string | null;
   guestName: string;
+  recFormat: "webm" | "mp4";
+  recCompressed: boolean;
 };
 
 const DEFAULTS: Prefs = {
@@ -14,6 +16,8 @@ const DEFAULTS: Prefs = {
   camId: null,
   speakerId: null,
   guestName: "",
+  recFormat: "webm",
+  recCompressed: false,
 };
 
 const KEY = "vc-demo.prefs.v1";
@@ -39,6 +43,8 @@ export function getPrefs(): Prefs {
     camId: typeof stored.camId === "string" ? stored.camId : null,
     speakerId: typeof stored.speakerId === "string" ? stored.speakerId : null,
     guestName: typeof stored.guestName === "string" ? stored.guestName : "",
+    recFormat: stored.recFormat === "mp4" ? "mp4" : DEFAULTS.recFormat,
+    recCompressed: typeof stored.recCompressed === "boolean" ? stored.recCompressed : DEFAULTS.recCompressed,
   };
 }
 

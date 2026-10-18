@@ -48,7 +48,8 @@ export function toPublicRoom(room: RoomRow) {
 export async function listRooms(hostId: string) {
   return cached(cacheKey("rooms-list", hostId), LIST_TTL, async () => {
     const list = await prisma.room.findMany({
-      where: { hostId },
+      // Expired rooms drop off the lobby; the row stays so old links still say "expired", not "not found".
+      where: { hostId, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
       orderBy: { createdAt: "desc" },
     });
     return list.map(toPublicRoom);

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   ButtonGroup,
@@ -34,6 +34,9 @@ import type { DeviceInfo } from "@/lib/webrtc/devices";
 import DeviceMenu from "@/components/call/DeviceMenu";
 import MoreDrawer from "@/components/call/MoreDrawer";
 import DeviceDrawer from "@/components/call/DeviceDrawer";
+import RecordButton from "@/components/call/RecordButton";
+import { RecordPopover, RecordSheet } from "@/components/call/RecordSheet";
+import type { RecordOptions } from "@/hooks/use-recorder";
 
 export default function Toolbar({
   state,
@@ -58,6 +61,7 @@ export default function Toolbar({
   compact,
   onCopyLink,
   code,
+  record,
 }: {
   state: MediaState;
   onToggle: (patch: Partial<MediaState>) => void;
@@ -82,11 +86,27 @@ export default function Toolbar({
   onCopyLink: () => void;
   /** Meeting code: the phone More sheet shows the link. */
   code: string;
+  /** Absent for guests / browsers that can't record (spec 003 FR10). */
+  record?: {
+    startedAt: number | null;
+    saving: boolean;
+    /** Stop while recording, else open the sheet. */
+    onPress: () => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onStart: (opts: RecordOptions) => void;
+  };
 }) {
   const [confirmEnd, setConfirmEnd] = useState(false);
   const more = useOverlayState();
   const deviceSheet = useOverlayState();
   const byKind = (k: DeviceInfo["kind"]) => devices.filter((d) => d.kind === k);
+  const recordOpen = record?.open ?? false;
+  // Phone: the record sheet stacks on More, so a sheet opened without it (R key) brings More up first.
+  useEffect(() => {
+    if (compact && recordOpen) more.open();
+  }, [compact, recordOpen, more]);
+  const button = record ? { startedAt: record.startedAt, saving: record.saving, onPress: record.onPress } : null;
   const endDialog = (
     <Modal isOpen={confirmEnd} onOpenChange={(v) => !v && setConfirmEnd(false)}>
       <ModalBackdrop>
@@ -138,6 +158,7 @@ export default function Toolbar({
         >
           {state.cam ? <Video size={18} /> : <VideoOff size={18} />}
         </Button>
+        {button && button.startedAt !== null ? <RecordButton {...button} /> : null}
         <Button variant="danger" className="h-12 px-5" aria-label="Leave" onPress={onLeave}>
           <PhoneOff size={18} /> Leave
         </Button>
@@ -158,16 +179,30 @@ export default function Toolbar({
           onLock={onLock}
           onEnd={() => setConfirmEnd(true)}
           onDevices={deviceSheet.open}
-        />
-        <DeviceDrawer
-          state={deviceSheet}
-          sections={[
-            { title: "Microphone", kind: "audio", devices: byKind("audioinput"), activeId: micId },
-            ...(showSpeaker ? [{ title: "Speaker", kind: "speaker" as const, devices: byKind("audiooutput"), activeId: speakerId }] : []),
-            { title: "Camera", kind: "video", devices: byKind("videoinput"), activeId: camId },
-          ]}
-          onPick={onPickDevice}
-        />
+          onRecord={record && record.startedAt === null ? record.onPress : undefined}
+        >
+          {record ? (
+            <RecordSheet
+              nested
+              open={record.open}
+              onOpenChange={record.onOpenChange}
+              onStart={(opts) => {
+                more.close();
+                record.onStart(opts);
+              }}
+            />
+          ) : null}
+          <DeviceDrawer
+            nested
+            state={deviceSheet}
+            sections={[
+              { title: "Microphone", kind: "audio", devices: byKind("audioinput"), activeId: micId },
+              ...(showSpeaker ? [{ title: "Speaker", kind: "speaker" as const, devices: byKind("audiooutput"), activeId: speakerId }] : []),
+              { title: "Camera", kind: "video", devices: byKind("videoinput"), activeId: camId },
+            ]}
+            onPick={onPickDevice}
+          />
+        </MoreDrawer>
         {endDialog}
       </div>
     );
@@ -224,6 +259,11 @@ export default function Toolbar({
         >
           <MonitorUp size={18} />
         </Button>
+      ) : null}
+      {record && button ? (
+        <RecordPopover open={record.open} onOpenChange={record.onOpenChange} onStart={record.onStart}>
+          <RecordButton {...button} />
+        </RecordPopover>
       ) : null}
       <Button
         isIconOnly

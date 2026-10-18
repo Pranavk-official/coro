@@ -5,6 +5,7 @@ import { Crown, MicOff, MonitorUp, VideoOff } from "lucide-react";
 import { Mascot } from "page-mascot";
 import type { RemotePeer } from "@/hooks/use-call";
 import { layoutTiles, tileId, type TileKey } from "@/lib/webrtc/screen";
+import PresentingBanner from "@/components/call/PresentingBanner";
 import { setSpeaker } from "@/lib/webrtc/devices";
 import { getPrefs } from "@/lib/utils/prefs";
 
@@ -144,7 +145,7 @@ export default function VideoTile({
         autoPlay
         playsInline
         aria-label={`${info.name}'s video`}
-        className={`h-full w-full object-cover ${camOff ? "invisible" : ""}`}
+        className={`h-full w-full object-cover [transform:scaleX(-1)] ${camOff ? "invisible" : ""}`}
       />
       {camOff ? <PersonAvatar seed={info.userId} name={info.name} image={info.image} size={compact ? 72 : 140} /> : null}
       <div className="absolute bottom-2 left-2 flex items-center gap-1">
@@ -163,6 +164,11 @@ export default function VideoTile({
           </Chip>
         )}
       </div>
+      {info.state.recording ? (
+        <span aria-label={`${info.name} is recording`} className="absolute left-2 top-2 rounded-full bg-danger/80 px-2 py-0.5 text-xs font-semibold text-white">
+          ● REC
+        </span>
+      ) : null}
       <div className="absolute right-2 top-2">
         <Badges mic={info.state.mic} cam={info.state.cam} />
       </div>
@@ -225,6 +231,9 @@ export function ScreenTile({
   );
 }
 
+/** Layout id for our own screen tile; never a socket id. */
+const SELF = "self";
+
 export function VideoGrid({
   peers,
   presenterId,
@@ -232,6 +241,8 @@ export function VideoGrid({
   speakingId,
   followedId,
   onPin,
+  localScreen,
+  onStopShare,
 }: {
   peers: RemotePeer[];
   presenterId?: string | null;
@@ -239,15 +250,21 @@ export function VideoGrid({
   speakingId?: string | null;
   followedId?: string | null;
   onPin?: (id: string) => void;
+  /** Our own share: takes the presenter slot so it fills the stage (spec 007 FR9). */
+  localScreen?: MediaStream | null;
+  onStopShare?: () => void;
 }) {
   const byId = new Map(peers.map((p) => [p.info.id, p]));
   const { main, rail } = layoutTiles({
     ids: peers.map((p) => p.info.id),
-    presenterId: presenterId ?? null,
+    presenterId: localScreen ? SELF : (presenterId ?? null),
     pinnedId: pinnedId ?? null,
     followedId: followedId ?? null,
   });
   const tile = (t: TileKey, compact = false) => {
+    if (t.kind === "screen" && t.id === SELF) {
+      return <PresentingBanner key={SELF} stream={localScreen ?? null} onStop={() => onStopShare?.()} stage={compact ? "rail" : "main"} />;
+    }
     const peer = byId.get(t.id);
     if (!peer) return null;
     const key = tileId(t);

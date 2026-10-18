@@ -27,6 +27,9 @@ test("E36 @regression @uat share mid-call → others see screen + camera; Stop p
 
   await share(member.page);
   await expectPlaying(member.page.getByLabel("Your screen preview"));
+  // Presenter sees their own share on the stage (FR9), not a thumbnail.
+  const stage = await member.page.getByLabel("Your screen preview").boundingBox();
+  expect(stage!.width).toBeGreaterThan(member.page.viewportSize()!.width / 2);
   await expectPlaying(screenOf(host.page, NAMES.member));
   await expectPlaying(remoteVideo(host.page, NAMES.member)); // camera still running alongside
   await expect(host.page.getByText(`${NAMES.member} is presenting`)).toBeVisible();

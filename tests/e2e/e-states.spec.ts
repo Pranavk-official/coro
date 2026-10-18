@@ -17,6 +17,7 @@ test("E11 @regression @uat expired / ended / locked / unknown → status screen,
   });
   await page.goto(`/rooms/${expired.code}`);
   await expect(page.getByRole("heading", { name: "This room has expired." })).toBeVisible({ timeout: 10_000 });
+  expect(await (await host.ctx.request.get("/api/rooms")).text()).not.toContain(expired.code); // hidden from the lobby
 
   const ended = await createRoomAs(host.ctx.request, { name: "E11 ended", kind: "later" });
   expect((await host.ctx.request.post(`/api/rooms/${ended.code}/end`)).status()).toBe(204);

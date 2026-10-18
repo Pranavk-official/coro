@@ -148,9 +148,13 @@ export function usePrejoin() {
     selectDevice,
     previewSpeaker,
     stop,
-    join: () => ({
-      stream: streamRef.current,
-      state: { mic: prefs.mic, cam: prefs.cam, screen: false },
-    }),
+    // Blocked/missing device = off for everyone else too (else peers get a blank tile, not the mascot).
+    join: () => {
+      const s = streamRef.current;
+      return {
+        stream: s,
+        state: { mic: prefs.mic && !!s?.getAudioTracks().length, cam: prefs.cam && !!s?.getVideoTracks().length, screen: false },
+      };
+    },
   };
 }
