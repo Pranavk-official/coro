@@ -57,12 +57,12 @@ export default function MoreDrawer({
             <Button variant="ghost" className={`${tile} col-span-2 text-white`} onPress={onDevices}>
               <Settings2 size={20} /> Audio & video
             </Button>
-            {shareSupported ? (
-              <Button variant="ghost" className={`${tile} text-white`} onPress={run(onShare)}>
-                <MonitorUp size={20} /> {sharing ? "Stop sharing" : "Share screen"}
-              </Button>
-            ) : null}
-            <Button variant="ghost" className={`${tile} text-white ${shareSupported ? "" : "col-span-2"}`} onPress={onParticipants}>
+            {/* Phone browsers have no getDisplayMedia: show why instead of hiding the tile. */}
+            <Button variant="ghost" className={`${tile} text-white`} isDisabled={!shareSupported} onPress={run(onShare)}>
+              <MonitorUp size={20} /> {sharing ? "Stop sharing" : "Share screen"}
+              {shareSupported ? null : <span className="text-[12px] font-normal text-white/60">Desktop only</span>}
+            </Button>
+            <Button variant="ghost" className={`${tile} text-white`} onPress={onParticipants}>
               <Users size={20} /> {waitingCount > 0 ? `Participants (${waitingCount} waiting)` : "Participants"}
             </Button>
             {onRecord ? (

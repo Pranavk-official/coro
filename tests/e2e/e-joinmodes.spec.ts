@@ -40,3 +40,24 @@ test("E35 @regression @uat screen share only: joins presenting, others see the s
   await host.ctx.close();
   await member.ctx.close();
 });
+
+test("E47 @regression spec 008: second share-only session of someone in the call → one person tile + screen; no self-mirror", async ({ browser }) => {
+  const host = await asRole(browser, "host");
+  const member = await asRole(browser, "member");
+  const room = await createRoomAs(host.ctx.request, { name: "E47", kind: "instant" });
+  await enterCall(host.page, room.code);
+  await enterCall(member.page, room.code);
+  await expect(remoteTiles(host.page).filter({ hasText: NAMES.member })).toBeVisible({ timeout: 10_000 });
+
+  // Same account, share-only, from a second session (what the phone app's native peer does).
+  const phone = await asRole(browser, "member");
+  await phone.page.goto(`/rooms/${room.code}`);
+  await expect(phone.page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 10_000 });
+  await pick(phone.page, "Screen share only");
+  await phone.page.getByRole("button", { name: "Join now" }).click();
+  await phone.page.getByRole("button", { name: "Join here too" }).click();
+  await expectPlaying(host.page.getByLabel(`${NAMES.member}'s screen`));
+  await expect(remoteTiles(host.page).filter({ hasText: NAMES.member })).toHaveCount(1); // no duplicate camera-off tile
+  await expect(member.page.getByLabel(`${NAMES.member}'s screen`)).toHaveCount(0); // own share not mirrored back
+  for (const c of [host.ctx, member.ctx, phone.ctx]) await c.close();
+});

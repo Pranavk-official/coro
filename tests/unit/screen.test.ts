@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getDisplayStream, layoutTiles, splitStreams, tileId } from "@/lib/webrtc/screen";
+import { getDisplayStream, isShareOnly, layoutTiles, redundantPersonTiles, splitStreams, tileId } from "@/lib/webrtc/screen";
 import { createPeer } from "@/lib/webrtc/peer";
 
 test("U1 @regression splitStreams picks the screen by signalled id, not by order", () => {
@@ -124,4 +124,17 @@ test("U4 @regression setScreen adds screen senders once, then swaps in place; ca
   await peer.replaceVideoTrack(newCam);
   expect(camVideo!.replaced).toEqual([newCam]);
   expect(screenVideo!.track).toBe(video); // untouched
+});
+
+test("U8 @regression spec 008: share-only session of someone already in the call hides only their person tile", () => {
+  const on = { mic: true, cam: true, screen: false };
+  const share = { mic: false, cam: false, screen: true };
+  expect(isShareOnly(share)).toBe(true);
+  expect(isShareOnly({ ...share, mic: true })).toBe(false);
+  const peers = [
+    { id: "a1", userId: "ann", state: on },
+    { id: "a2", userId: "ann", state: share }, // Ann's phone app presenting
+    { id: "b1", userId: "bob", state: share }, // Bob joined share-only, no other session
+  ];
+  expect([...redundantPersonTiles(peers)]).toEqual(["a2"]);
 });

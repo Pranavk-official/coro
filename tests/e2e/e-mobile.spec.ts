@@ -74,3 +74,56 @@ test("E44 @regression phone devices: ⋯ → Audio & video → stacked list pick
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await phone.close();
 });
+
+test("E46 @regression phone without screen capture: More shows Share screen disabled, 'Desktop only'", async ({ browser }) => {
+  const phone = await browser.newContext({ storageState: AUTH.host, viewport: { width: 375, height: 667 } });
+  await phone.addInitScript(() => {
+    // Real phone browsers (iOS Safari, Android Chrome) have no getDisplayMedia.
+    delete (MediaDevices.prototype as { getDisplayMedia?: unknown }).getDisplayMedia;
+  });
+  const page = await phone.newPage();
+  const room = await createRoomAs(phone.request, { name: "E46", kind: "instant" });
+  await enterCall(page, room.code);
+  await page.getByRole("button", { name: "More options" }).click();
+  const tile = page.getByRole("button", { name: /^Share screen/ });
+  await expect(tile).toBeDisabled();
+  await expect(tile).toContainText("Desktop only");
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: test.info().outputPath("more-no-share.png") });
+  await phone.close();
+});
+
+test("E48 @regression spec 008: in the phone app shell, Share screen calls the native plugin; its stop event resets the tile", async ({ browser }) => {
+  const phone = await browser.newContext({ storageState: AUTH.host, viewport: { width: 375, height: 667 } });
+  await phone.addInitScript(() => {
+    delete (MediaDevices.prototype as { getDisplayMedia?: unknown }).getDisplayMedia; // a real phone WebView
+    const w = window as unknown as { __share: { calls: unknown[]; stop?: (e: object) => void } };
+    w.__share = { calls: [] };
+    (window as unknown as { Capacitor: object }).Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: {
+        NativeShare: {
+          start: async (o: unknown) => void w.__share.calls.push(["start", o]),
+          stop: async () => void w.__share.calls.push(["stop"]),
+          addListener: async (_e: string, cb: (e: object) => void) => ((w.__share.stop = cb), { remove: async () => undefined }),
+        },
+      },
+    };
+  });
+  const page = await phone.newPage();
+  const room = await createRoomAs(phone.request, { name: "E48", kind: "instant" });
+  await enterCall(page, room.code);
+  await page.getByRole("button", { name: "More options" }).click();
+  await page.getByRole("button", { name: "Share screen" }).click();
+  const calls = () => page.evaluate(() => (window as unknown as { __share: { calls: [string, Record<string, string>?][] } }).__share.calls);
+  await expect.poll(calls).toHaveLength(1);
+  const [[op, args]] = await calls();
+  expect(op).toBe("start");
+  expect(args).toMatchObject({ code: room.code, origin: "http://localhost:3000" });
+  expect(args!.screenId).toBeTruthy();
+  await expect(page.getByRole("region", { name: "You are presenting" })).toBeVisible();
+  // Native side stops (system stop / takeover): the web goes back to not presenting.
+  await page.evaluate(() => (window as unknown as { __share: { stop: (e: object) => void } }).__share.stop({ reason: "system" }));
+  await expect(page.getByRole("region", { name: "You are presenting" })).toHaveCount(0);
+  await phone.close();
+});

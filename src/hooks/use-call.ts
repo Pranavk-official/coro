@@ -10,7 +10,8 @@ import {
 import { createPeer, handleSignal, type ManagedPeer } from "@/lib/webrtc/peer";
 import { capsFor } from "@/lib/webrtc/caps";
 import { createAutoFollow, createSpeakerDetector } from "@/lib/webrtc/speaker";
-import { getDisplayStream, splitStreams } from "@/lib/webrtc/screen";
+import { getDisplayStream, isShareOnly, splitStreams } from "@/lib/webrtc/screen";
+import { isNativeShare, onNativeShareStopped, startNativeShare, stopNativeShare } from "@/lib/native/share";
 import { useIceServers } from "@/hooks/use-ice-servers";
 import { notify } from "@/lib/toast";
 
@@ -46,6 +47,8 @@ export function useCall(opts: {
   initialState: MediaState;
   /** Screen-share-only join: picked in pre-join (getDisplayMedia needs that click). */
   initialScreen?: MediaStream | null;
+  /** Our account id: our own native share-only session (spec 008) is skipped, never shown or connected. */
+  userId?: string;
 }) {
   const { code, joinToken } = opts;
   const [status, setStatus] = useState<CallStatus>({ kind: "joining" });
@@ -61,6 +64,13 @@ export function useCall(opts: {
   );
   const [localState, setLocalState] = useState<MediaState>(initialState);
   const [localScreen, setLocalScreen] = useState<MediaStream | null>(opts.initialScreen ?? null);
+  // Phone app (spec 008): a native share-only peer presents for us; our own state stays `screen:false`.
+  const [nativeSharing, setNativeSharing] = useState(false);
+  const nativeRef = useRef(false);
+  const userIdRef = useRef(opts.userId);
+  useEffect(() => {
+    userIdRef.current = opts.userId;
+  }, [opts.userId]);
   const [localStream] = useState<MediaStream | null>(opts.initialStream);
   const { data: iceServers } = useIceServers();
   // Ref, not a dep: ICE servers arriving must not re-run the join effect (leave + rejoin mid-handshake).
@@ -171,6 +181,12 @@ export function useCall(opts: {
     getSocket().emit("state", next);
   }, []);
   const stopShare = useCallback(async () => {
+    if (nativeRef.current) {
+      nativeRef.current = false;
+      setNativeSharing(false);
+      await stopNativeShare();
+      return;
+    }
     const shared = screenRef.current;
     screenRef.current = null;
     shared?.getTracks().forEach((t) => t.stop()); // ends the browser's "sharing" indicator too
@@ -210,6 +226,17 @@ export function useCall(opts: {
 
   const startShare = useCallback(async (): Promise<boolean> => {
     if (!carrier) return false;
+    if (isNativeShare()) {
+      try {
+        await startNativeShare({ origin: location.origin, code, screenId: carrier.id, ...(joinToken ? { joinToken } : {}) });
+        nativeRef.current = true;
+        setNativeSharing(true);
+        return true;
+      } catch {
+        notify("share-failed", { title: "Couldn't start sharing your screen", variant: "danger" });
+        return false;
+      }
+    }
     const shared = await getDisplayStream(navigator.mediaDevices);
     const video = shared?.getVideoTracks()[0];
     if (!shared || !video) {
@@ -228,7 +255,19 @@ export function useCall(opts: {
     const audio = shared.getAudioTracks()[0] ?? null;
     await Promise.all([...pcs.current.values()].map((pc) => pc.setScreen(video, audio, carrier)));
     return true;
-  }, [setMedia, stopShare, carrier]);
+  }, [setMedia, stopShare, carrier, code, joinToken]);
+
+  // Native share stopped on the phone side (system stop, takeover, host, kicked); stop it when the call unmounts.
+  useEffect(() => {
+    const off = onNativeShareStopped(() => {
+      nativeRef.current = false;
+      setNativeSharing(false);
+    });
+    return () => {
+      off();
+      if (nativeRef.current) void stopNativeShare();
+    };
+  }, []);
 
   // Screen-share-only join: same `ended` handling as a share started in the call.
   useEffect(() => {
@@ -246,6 +285,8 @@ export function useCall(opts: {
   useEffect(() => {
     const socket = getSocket();
     let disposed = false;
+    // Our phone app's native screen peer: viewers get it; we'd only see our own screen mirrored back.
+    const ownShare = (p: Peer) => p.userId === userIdRef.current && isShareOnly(p.state);
     liveRef.current = true;
 
     function stopScreen() {
@@ -270,7 +311,7 @@ export function useCall(opts: {
       setLocked(result.locked);
       setCanAdmit(result.canAdmit);
       setIsHost(result.isHost);
-      for (const peer of result.peers) addPeerConnection(peer, true);
+      for (const peer of result.peers) if (!ownShare(peer)) addPeerConnection(peer, true);
       setStatus({ kind: "in-call" });
       socket.emit("state", stateRef.current);
     }
@@ -318,9 +359,16 @@ export function useCall(opts: {
     // server creates a second socket for this tab (a duplicate "you" for everyone else).
     else if (!socket.active) socket.connect();
 
-    socket.on("peer:joined", (peer: Peer) => addPeerConnection(peer, false));
+    socket.on("peer:joined", (peer: Peer) => {
+      if (!ownShare(peer)) addPeerConnection(peer, false);
+    });
     socket.on("peer:left", (id: string) => dropPeer(id));
-    socket.on("peer:state", (id: string, state: MediaState) => patchPeerState(id, state));
+    socket.on("peer:state", (id: string, state: MediaState) => {
+      const info = infos.current.get(id);
+      // Our share-only session announces itself after joining (web share-only join): drop it then.
+      if (info && ownShare({ ...info, state })) dropPeer(id);
+      else patchPeerState(id, state);
+    });
     socket.on("signal", (from: string, data) => {
       const pc = pcs.current.get(from);
       if (pc) void handleSignal(pc, data);
@@ -459,6 +507,9 @@ export function useCall(opts: {
     localStream,
     /** Our own presentation (preview only; never played with sound). */
     localScreen,
+    /** We're presenting: from this browser, or from the phone app's native peer (spec 008). */
+    presenting: localState.screen || nativeSharing,
+    nativeSharing,
     /** Remote peer currently presenting (one at a time, spec 007 FR6). */
     presenterId,
     maxPeers: MAX_PEERS,

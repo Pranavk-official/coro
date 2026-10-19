@@ -13,6 +13,18 @@ export function splitStreams<S extends { id: string }>(
 
 export type TileKey = { kind: "camera" | "screen"; id: string };
 
+type Flags = { screen: boolean; cam: boolean; mic: boolean };
+
+/** A share-only session (007 share-only join, 008 native phone share): presenting, no camera, no mic. */
+export const isShareOnly = (s: Flags): boolean => s.screen && !s.cam && !s.mic;
+
+/** Person tiles to hide (spec 008 FR8): share-only sessions of someone who already has another tile. Their screen tile stays. */
+export function redundantPersonTiles(peers: readonly { id: string; userId: string; state: Flags }[]): Set<string> {
+  return new Set(
+    peers.filter((p) => isShareOnly(p.state) && peers.some((o) => o.id !== p.id && o.userId === p.userId)).map((p) => p.id),
+  );
+}
+
 /** Pin/key id of a tile: a peer id for cameras, `screen:<peerId>` for a presentation. */
 export const tileId = (t: TileKey): string => (t.kind === "screen" ? `screen:${t.id}` : t.id);
 

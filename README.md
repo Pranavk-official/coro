@@ -160,6 +160,12 @@ docker compose --profile turn up -d coturn   # optional TURN relay (needs TURN_S
 > [!IMPORTANT]
 > WebRTC needs HTTPS outside `localhost`. Put the app behind a TLS-terminating reverse proxy, set `BETTER_AUTH_URL` to the public URL, and set `TRUST_PROXY=1`. Set `TURN_HOST` and `TURN_SECRET` so callers behind strict NATs can connect.
 
+## Mobile app
+
+Phone browsers can't share their screen, so `mobile/` wraps the deployed site in a Capacitor app whose only native
+part is screen sharing (Android `MediaProjection`, iOS ReplayKit broadcast extension). Build and test steps:
+[`mobile/README.md`](mobile/README.md). No Android SDK? `dev/android-emulator.sh -S` runs it in docker-android.
+
 ## Rate limits
 
 Redis holds fixed-window counters (`rl:*`), socket strikes (`strike:*`) and a short read cache (`cache:*`); all of it is disposable. Defaults sit about 5× above normal use.

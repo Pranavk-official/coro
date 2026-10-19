@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage, Badge, Chip } from "@heroui/react"
 import { Crown, MicOff, MonitorUp, VideoOff } from "lucide-react";
 import { Mascot } from "page-mascot";
 import type { RemotePeer } from "@/hooks/use-call";
-import { layoutTiles, tileId, type TileKey } from "@/lib/webrtc/screen";
+import { layoutTiles, redundantPersonTiles, tileId, type TileKey } from "@/lib/webrtc/screen";
 import PresentingBanner from "@/components/call/PresentingBanner";
 import { setSpeaker } from "@/lib/webrtc/devices";
 import { getPrefs } from "@/lib/utils/prefs";
@@ -255,8 +255,9 @@ export function VideoGrid({
   onStopShare?: () => void;
 }) {
   const byId = new Map(peers.map((p) => [p.info.id, p]));
+  const hidden = redundantPersonTiles(peers.map((p) => p.info));
   const { main, rail } = layoutTiles({
-    ids: peers.map((p) => p.info.id),
+    ids: peers.map((p) => p.info.id).filter((id) => !hidden.has(id)),
     presenterId: localScreen ? SELF : (presenterId ?? null),
     pinnedId: pinnedId ?? null,
     followedId: followedId ?? null,

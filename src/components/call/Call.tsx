@@ -17,6 +17,8 @@ import {
 import { errorCopy } from "@/lib/utils/error-copy";
 import { useCall } from "@/hooks/use-call";
 import { useRecorder } from "@/hooks/use-recorder";
+import { isNativeShare } from "@/lib/native/share";
+import { redundantPersonTiles } from "@/lib/webrtc/screen";
 import RoomStatus from "@/components/call/RoomStatus";
 import WaitingRoom from "@/components/call/WaitingRoom";
 import AdmitBanner from "@/components/call/AdmitBanner";
@@ -117,6 +119,7 @@ export default function Call({
     initialStream,
     initialState,
     initialScreen,
+    userId: session?.user.id,
   });
   const { setMedia } = call;
   const callRef = useRef<HTMLElement>(null);
@@ -198,7 +201,7 @@ export default function Call({
           call.setMedia({ cam: !call.localState.cam });
           break;
         case "s":
-          void (call.localState.screen ? call.stopShare() : call.startShare());
+          void (call.presenting ? call.stopShare() : call.startShare());
           break;
         case "p":
           drawer.open();
@@ -223,11 +226,13 @@ export default function Call({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [call.localState.mic, call.localState.cam, call.localState.screen, call.isHost, call.locked, canRecord, recorder.recording]);
+  }, [call.localState.mic, call.localState.cam, call.presenting, call.isHost, call.locked, canRecord, recorder.recording]);
 
   const prevPeers = useRef<Set<string>>(new Set());
   useEffect(() => {
-    const ids = new Set(call.peers.keys());
+    // A phone-app share session (spec 008) is the same person, not someone new joining.
+    const share = redundantPersonTiles([...call.peers.values()].map((p) => p.info));
+    const ids = new Set([...call.peers.keys()].filter((id) => !share.has(id)));
     for (const id of ids) {
       if (!prevPeers.current.has(id)) {
         const name = call.peers.get(id)?.info.name ?? "Someone";
@@ -352,12 +357,16 @@ export default function Call({
   }
 
   const remotes = [...call.peers.values()];
+  // People, not sessions: hides a phone-app share session of someone already here (spec 008 FR8). The grid gets
+  // every session (it shows the screen and hides the person tile itself).
+  const shareSessions = redundantPersonTiles(remotes.map((p) => p.info));
+  const people = remotes.filter((p) => !shareSessions.has(p.info.id));
   const participants = (nested: boolean) => (
     <ParticipantsDrawer
       nested={nested}
       state={drawer}
       waiting={call.waiting}
-      peers={remotes}
+      peers={people}
       self={{ name: session?.user.name || "You", image: session?.user.image ?? null }}
       canAdmit={call.canAdmit}
       isHost={call.isHost}
@@ -369,10 +378,11 @@ export default function Call({
       onStopShare={(id) => call.stopPeerShare(id)}
     />
   );
+  // Browsers with getDisplayMedia, or the phone app's native share (spec 008).
   const shareSupported =
-    typeof navigator !== "undefined" &&
-    typeof (navigator.mediaDevices as { getDisplayMedia?: unknown } | undefined)?.getDisplayMedia ===
-      "function";
+    isNativeShare() ||
+    (typeof navigator !== "undefined" &&
+      typeof (navigator.mediaDevices as { getDisplayMedia?: unknown } | undefined)?.getDisplayMedia === "function");
 
   return (
     <main ref={callRef} className="dark fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
@@ -389,7 +399,7 @@ export default function Call({
         <MeetingChip
           code={code}
           expiresAt={roomInfo.data?.expiresAt ?? null}
-          count={remotes.length + 1}
+          count={people.length + 1}
           max={call.maxPeers}
         />
         {call.locked ? <span className="glass rounded-full px-3 py-1.5 text-sm text-warning">locked</span> : null}
@@ -400,7 +410,7 @@ export default function Call({
             Camera or microphone blocked. Allow access in your browser and reload.
           </p>
         ) : null}
-        {call.localState.screen && remotes.length === 0 ? (
+        {(call.localState.screen && remotes.length === 0) || call.nativeSharing ? (
           <PresentingBanner stream={call.localScreen} onStop={() => void call.stopShare()} />
         ) : null}
         {remotes.length === 0 ? (
@@ -455,8 +465,8 @@ export default function Call({
         code={code}
         state={call.localState}
         onToggle={(patch) => call.setMedia(patch)}
-        onShare={() => void (call.localState.screen ? call.stopShare() : call.startShare())}
-        sharing={call.localState.screen}
+        onShare={() => void (call.presenting ? call.stopShare() : call.startShare())}
+        sharing={call.presenting}
         shareSupported={shareSupported}
         waitingCount={call.waiting.length}
         canAdmit={call.canAdmit}
