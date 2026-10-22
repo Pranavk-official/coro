@@ -57,6 +57,8 @@ async function redis() {
 
 test.beforeAll(async () => {
   app = (await import("@/server/app")).default;
+  // getRedis() only waits 1 s for the first handshake (fail fast in prod); under full-suite load that can lose the race.
+  await expect.poll(async () => (await import("@/lib/redis/client")).pingRedis(), { timeout: 15_000 }).toBe(true);
 });
 
 test("I1 @regression middleware at max=2: 429 envelope, Retry-After + X-RateLimit-*, blocked counter", async () => {

@@ -14,7 +14,7 @@ import {
   DrawerHeading,
   type useOverlayState,
 } from "@heroui/react";
-import { Check, Crown, MicOff, MonitorUp, MonitorX, UserX, X } from "lucide-react";
+import { Check, Crown, MicOff, MonitorUp, MonitorX, Pin, PinOff, UserX, X } from "lucide-react";
 import type { Peer } from "@/lib/socket.io/events";
 import type { RemotePeer } from "@/hooks/use-call";
 import { initials } from "@/lib/utils/initials";
@@ -34,6 +34,9 @@ type Props = {
   onMute: (id: string) => void;
   onRemove: (id: string) => void;
   onStopShare: (id: string) => void;
+  /** Tile id as the grid uses it (a peer id for a camera). Presentations pin from their own tile. */
+  pinnedId: string | null;
+  onPin: (tileId: string) => void;
 };
 
 const icon = "size-9 min-w-0 text-foreground/80 hover:text-foreground";
@@ -126,6 +129,17 @@ function ParticipantsBody(p: Omit<Props, "state">) {
                 .join(" · ")}
             >
               {info.state.screen && !p.isHost ? <MonitorUp size={16} className="mx-2 text-muted" aria-label="Presenting" /> : null}
+              <Button
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                className={`${icon} ${p.pinnedId === info.id ? "text-accent" : ""}`}
+                aria-label={p.pinnedId === info.id ? `Unpin ${info.name}` : `Pin ${info.name}`}
+                aria-pressed={p.pinnedId === info.id}
+                onPress={() => p.onPin(info.id)}
+              >
+                {p.pinnedId === info.id ? <PinOff size={18} /> : <Pin size={18} />}
+              </Button>
               {p.isHost ? (
                 <>
                   {info.state.screen ? (

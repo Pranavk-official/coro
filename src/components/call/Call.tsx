@@ -357,6 +357,8 @@ export default function Call({
       onMute={(id) => call.mute(id)}
       onRemove={(id) => call.kick(id)}
       onStopShare={(id) => call.stopPeerShare(id)}
+      pinnedId={call.pinnedId}
+      onPin={(id) => call.togglePin(id)}
     />
   );
   const shareSupported =

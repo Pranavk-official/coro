@@ -63,7 +63,8 @@ export const leaveButton = (page: Page) => page.getByRole("button", { name: /^Le
 export const remoteVideo = (page: Page, name: string) => page.getByLabel(`${name}'s video`);
 
 /** Remote tiles are the pin buttons (one per remote peer). */
-export const remoteTiles = (page: Page) => page.getByRole("button", { name: /^Pin / });
+/** Other people's camera tiles (each is a labelled group; pinning is its own button inside). */
+export const remoteTiles = (page: Page) => page.getByRole("group", { name: /'s tile$/ });
 
 export async function expectPlaying(video: Locator): Promise<void> {
   await expect

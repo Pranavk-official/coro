@@ -31,13 +31,21 @@ for (const colorScheme of ["light", "dark"] as const) {
   });
 }
 
+/** The collapsed dock clips its other options (overflow: hidden), which Playwright still calls "visible": compare boxes. */
+const shownInDock = async (page: Page, name: "Light" | "Dark" | "System") => {
+  const dock = (await page.locator(".theme-dock").boundingBox())!;
+  const o = (await option(page, name).boundingBox())!;
+  return o.x >= dock.x - 1 && o.x + o.width <= dock.x + dock.width + 1;
+};
+
 test("T2 @regression theme badge on other pages: current icon only, expands on hover", async ({ page }) => {
   await page.goto("/sign-in");
   await expect(option(page, "Dark")).toBeVisible();
-  await expect(option(page, "Light")).toBeHidden();
+  await expect.poll(() => shownInDock(page, "Dark")).toBe(true);
+  await expect.poll(() => shownInDock(page, "Light")).toBe(false);
 
   await option(page, "Dark").hover();
-  await expect(option(page, "Light")).toBeVisible();
+  await expect.poll(() => shownInDock(page, "Light")).toBe(true);
   await option(page, "Light").click();
   await expect(page.locator("html")).not.toHaveClass(/\bdark\b/);
 });

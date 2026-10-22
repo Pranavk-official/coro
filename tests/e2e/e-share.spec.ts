@@ -106,3 +106,27 @@ test("E40 @regression host stops someone's presentation from Participants", asyn
   await host.ctx.close();
   await member.ctx.close();
 });
+
+test("E61 @regression pin buttons on camera + presentation tiles decide what fills the stage", async ({ browser }) => {
+  const { host, member, room } = await pair(browser, "E61");
+  await enterCall(host.page, room.code);
+  await enterCall(member.page, room.code);
+  await share(member.page);
+  const presentation = host.page.getByRole("group", { name: `${NAMES.member}'s presentation` });
+  const camera = remoteTiles(host.page).filter({ hasText: NAMES.member });
+  await expect(presentation).toBeVisible({ timeout: 10_000 });
+  const wide = async (l: import("@playwright/test").Locator) => (await l.boundingBox())!.width > host.page.viewportSize()!.width / 2;
+  expect(await wide(presentation)).toBe(true); // presenter's screen takes the stage by default
+
+  await camera.hover();
+  await camera.getByRole("button", { name: `Pin ${NAMES.member}` }).click();
+  await expect.poll(() => wide(camera)).toBe(true); // pinned camera wins over the presentation
+  expect(await wide(presentation)).toBe(false);
+
+  await presentation.hover();
+  await presentation.getByRole("button", { name: `Pin ${NAMES.member}'s presentation` }).click();
+  await expect.poll(() => wide(presentation)).toBe(true);
+  await expect(presentation.getByRole("button", { name: `Unpin ${NAMES.member}'s presentation` })).toBeVisible();
+  await host.ctx.close();
+  await member.ctx.close();
+});

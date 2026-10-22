@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { Avatar, AvatarFallback, AvatarImage, Badge, Chip } from "@heroui/react";
-import { Crown, MicOff, MonitorUp, VideoOff } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Chip } from "@heroui/react";
+import { Crown, MicOff, MonitorUp, Pin, PinOff, VideoOff } from "lucide-react";
 import { Mascot } from "page-mascot";
 import type { RemotePeer } from "@/hooks/use-call";
 import { layoutTiles, tileId, type TileKey } from "@/lib/webrtc/screen";
@@ -9,6 +9,7 @@ import PresentingBanner from "@/components/call/PresentingBanner";
 import { setSpeaker } from "@/lib/webrtc/devices";
 import { getPrefs } from "@/lib/utils/prefs";
 import { initials } from "@/lib/utils/initials";
+import Tip from "@/components/ui/Tip";
 
 /** Speaking highlight: its own top layer, so the avatar overlay can't paint over it. Render it last. */
 export function SpeakingRing() {
@@ -63,16 +64,42 @@ export function PersonAvatar({
           <AvatarFallback>{initials(name)}</AvatarFallback>
         </Avatar>
       ) : (
-        // Booping the mascot must not also pin the tile underneath.
-        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-          <Mascot
-            directions={`/mascots/${m}-directions.webp`}
-            reactions={`/mascots/${m}-reactions.webp`}
-            size={size}
-            label={`${name}'s avatar`}
-          />
-        </div>
+        <Mascot
+          directions={`/mascots/${m}-directions.webp`}
+          reactions={`/mascots/${m}-reactions.webp`}
+          size={size}
+          label={`${name}'s avatar`}
+        />
       )}
+    </div>
+  );
+}
+
+/**
+ * Pin control for a tile's top-right corner (bottom-right is under the floating self-view), Meet-style:
+ * shows on hover / keyboard focus with a mouse, always on touch screens, and stays up while pinned.
+ */
+function PinButton({ label, pinned, onPin }: { label: string; pinned: boolean; onPin: () => void }) {
+  const text = pinned ? `Unpin ${label}` : `Pin ${label}`;
+  return (
+    <div
+      className={`transition-opacity duration-200 ${
+        pinned ? "opacity-100" : "opacity-0 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100 [@media(hover:none)]:opacity-100"
+      }`}
+    >
+      <Tip label={text}>
+        <Button
+          isIconOnly
+          size="sm"
+          variant="ghost"
+          aria-label={text}
+          aria-pressed={pinned}
+          className={`glass size-9 min-w-0 ${pinned ? "bg-foreground text-background" : "text-foreground"}`}
+          onPress={onPin}
+        >
+          {pinned ? <PinOff size={16} /> : <Pin size={16} />}
+        </Button>
+      </Tip>
     </div>
   );
 }
@@ -119,19 +146,7 @@ export default function VideoTile({
   const { info } = peer;
   const camOff = !info.state.cam; // the screen has its own tile (spec 007)
   return (
-    <div
-      className="relative h-full min-h-0 overflow-hidden rounded-card bg-surface"
-      onClick={onPin}
-      onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && onPin) {
-          e.preventDefault();
-          onPin();
-        }
-      }}
-      role={onPin ? "button" : undefined}
-      tabIndex={onPin ? 0 : undefined}
-      aria-label={onPin ? `Pin ${info.name}` : undefined}
-    >
+    <div role="group" aria-label={`${info.name}'s tile`} className="group/tile relative h-full min-h-0 overflow-hidden rounded-card bg-surface">
       {/* Always mounted: this element also plays the peer's audio (and feeds speaker detection). */}
       <video
         ref={ref}
@@ -162,8 +177,9 @@ export default function VideoTile({
           ● REC
         </span>
       ) : null}
-      <div className="absolute right-2 top-2">
+      <div className="absolute right-2 top-2 flex items-center gap-1">
         <Badges mic={info.state.mic} cam={info.state.cam} />
+        {onPin ? <PinButton label={info.name} pinned={!!pinned} onPin={onPin} /> : null}
       </div>
       {speaking ? <SpeakingRing /> : null}
     </div>
@@ -186,19 +202,7 @@ export function ScreenTile({
   }, [peer.screenStream]);
   const { name } = peer.info;
   return (
-    <div
-      className="relative h-full min-h-0 overflow-hidden rounded-card bg-black"
-      onClick={onPin}
-      onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && onPin) {
-          e.preventDefault();
-          onPin();
-        }
-      }}
-      role={onPin ? "button" : undefined}
-      tabIndex={onPin ? 0 : undefined}
-      aria-label={onPin ? `Spotlight ${name}'s presentation` : undefined}
-    >
+    <div role="group" aria-label={`${name}'s presentation`} className="group/tile relative h-full min-h-0 overflow-hidden rounded-card bg-black">
       {peer.screenStream ? (
         <video
           ref={ref}
@@ -220,6 +224,11 @@ export function ScreenTile({
           </Chip>
         )}
       </div>
+      {onPin ? (
+        <div className="absolute right-2 top-2">
+          <PinButton label={`${name}'s presentation`} pinned={!!pinned} onPin={onPin} />
+        </div>
+      ) : null}
     </div>
   );
 }

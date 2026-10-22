@@ -10,7 +10,7 @@ test("E1 @regression instant meeting: pre-join first, room exists only after Joi
   await page.goto("/");
   await page.getByRole("button", { name: "New meeting" }).click();
   await page.getByRole("menuitem", { name: /Start an instant meeting/ }).click();
-  await expect(page).toHaveURL("/new");
+  await expect(page).toHaveURL("/new", { timeout: 15000 }); // client navigation is slow under full-suite load
   await expect(page.getByText("Ready to join?", { exact: true })).toBeVisible({ timeout: 15000 });
   await page.getByRole("button", { name: /Meeting length/ }).click();
   await page.getByRole("option", { name: "15 min" }).click();

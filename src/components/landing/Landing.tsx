@@ -5,12 +5,6 @@ import {
   ArrowRight,
   CalendarPlus,
   Check,
-  CircleDot,
-  Keyboard,
-  Pin,
-  SlidersHorizontal,
-  Smartphone,
-  Smile,
   Link2,
   Lock,
   Mic,
@@ -24,6 +18,7 @@ import {
 } from "lucide-react";
 import SignInModal from "@/components/auth/SignInModal";
 import MeetingInput from "@/components/lobby/MeetingInput";
+import Features from "@/components/landing/Features";
 
 /** Signed-out landing (look and rhythm after uploadthing.ui-layouts.com, on Coro's own tokens). */
 
@@ -263,130 +258,6 @@ function Statement() {
           <span className="text-[15px] text-white/80">Free to use, open to self-host</span>
         </figcaption>
       </figure>
-    </section>
-  );
-}
-
-type Feature = { icon: LucideIcon; tone: string; tilt: number; title: string; body: string; span: string; chips?: string[] };
-const FEATURES: Feature[] = [
-  {
-    icon: CalendarPlus,
-    tone: "bg-[#ef4f6c]",
-    tilt: -6,
-    title: "Meet now, later, or on the calendar",
-    body: "Start an instant call, make a link for later, or schedule one and add it to Google Calendar or any app with an .ics file. Every room gets a short code anyone can type.",
-    span: "md:col-span-4",
-    chips: ["abc-defg-hij", "Instant", "Link for later", "Scheduled"],
-  },
-  {
-    icon: ShieldCheck,
-    tone: "bg-[#5b6cff]",
-    tilt: 5,
-    title: "You decide who gets in",
-    body: "Waiting room with admit or deny, optional password, room lock, mute or remove anyone, end it for all.",
-    span: "md:col-span-2",
-  },
-  {
-    icon: SlidersHorizontal,
-    tone: "bg-[#30b0a0]",
-    tilt: -4,
-    title: "Check before you join",
-    body: "Pick camera, mic and speaker, watch your mic level, and join with audio only, video only or just your screen. Your choices are remembered.",
-    span: "md:col-span-2",
-  },
-  {
-    icon: Smile,
-    tone: "bg-[#f5a524]",
-    tilt: 6,
-    title: "A face even with the camera off",
-    body: "Camera off? Your own mascot stands in on your tile, and turns to follow the cursor.",
-    span: "md:col-span-2",
-  },
-  {
-    icon: Smartphone,
-    tone: "bg-[#3ccf6e]",
-    tilt: -5,
-    title: "Made for phones too",
-    body: "Install it to your home screen. Controls sit in bottom sheets, and invites go out through your phone's share menu.",
-    span: "md:col-span-2",
-  },
-  {
-    icon: CircleDot,
-    tone: "bg-danger",
-    tilt: 4,
-    title: "Record the whole meeting",
-    body: "One tap records everyone's video and audio plus any screen share into one WebM or MP4 file. It saves to your device and, if you connect it, your Google Drive. Everyone sees a REC badge.",
-    span: "md:col-span-3",
-    chips: ["WebM / MP4", "720p option", "Google Drive"],
-  },
-  {
-    icon: MonitorUp,
-    tone: "bg-[#8b5cf6]",
-    tilt: -6,
-    title: "Present with sound",
-    body: "Share a screen, window or tab, with the tab's audio. The presentation takes the stage, and the host can stop anyone's share.",
-    span: "md:col-span-3",
-  },
-  {
-    icon: Pin,
-    tone: "bg-[#2997ff]",
-    tilt: 5,
-    title: "Follows the conversation",
-    body: "The stage follows whoever is speaking, with a ring around their tile. Pin someone to keep them big.",
-    span: "md:col-span-3",
-  },
-  {
-    icon: Keyboard,
-    tone: "bg-foreground",
-    tilt: -4,
-    title: "Keyboard first",
-    body: "Mute, camera, share, people, copy link, lock and record each have one key. Press ? in a call to see them.",
-    span: "md:col-span-3",
-    chips: ["M", "V", "S", "P", "C", "L", "R", "?"],
-  },
-];
-
-function Features() {
-  return (
-    <section id="features" className="scroll-mt-20 px-4 py-20 sm:px-6">
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 text-center">
-        <span className="rounded-full bg-accent px-3 py-1 text-[13px] text-accent-foreground">What&apos;s in the box</span>
-        <h2 className="text-[34px] leading-[1.05] font-bold tracking-[-0.03em] sm:text-[56px]">
-          Small app,
-          <br />
-          <span className="text-accent">real features.</span>
-        </h2>
-        <p className="max-w-xl text-[17px] text-foreground/80">Everything below works today, for free, in the browser.</p>
-      </div>
-      <ul className="mx-auto mt-12 grid max-w-5xl gap-4 md:grid-cols-6">
-        {FEATURES.map(({ icon: Icon, tone, tilt, title, body, span, chips }) => (
-          <li
-            key={title}
-            className={`group flex flex-col gap-4 rounded-[22px] bg-surface p-6 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 motion-reduce:transition-none sm:p-7 ${span}`}
-          >
-            <span
-              aria-hidden
-              style={{ rotate: `${tilt}deg` }}
-              className={`flex size-12 items-center justify-center rounded-2xl shadow-lg transition-[rotate] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:[rotate:0deg] ${tone} ${tone === "bg-foreground" ? "text-background" : "text-white"}`}
-            >
-              <Icon className="size-6" strokeWidth={2.2} />
-            </span>
-            <div className="flex flex-col gap-1.5">
-              <h3 className="text-[20px] leading-tight font-semibold tracking-[-0.01em]">{title}</h3>
-              <p className="text-[15px] leading-relaxed text-muted">{body}</p>
-            </div>
-            {chips ? (
-              <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
-                {chips.map((c) => (
-                  <span key={c} className="rounded-lg bg-default px-2 py-0.5 font-mono text-[13px]">
-                    {c}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }

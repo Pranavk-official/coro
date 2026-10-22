@@ -10,6 +10,7 @@ const makeClient = (url: string) =>
 export type RedisClient = ReturnType<typeof makeClient>;
 
 let client: RedisClient | null = null;
+let clientUrl: string | null = null;
 let firstWait: Promise<unknown> | null = null;
 const lastLog = new Map<string, number>();
 
@@ -31,9 +32,15 @@ export const redisConfigured = (): boolean => Boolean(process.env.REDIS_URL);
 export async function getRedis(): Promise<RedisClient> {
   const url = process.env.REDIS_URL;
   if (!url) throw new Error("redis_not_configured");
+  // A different URL than the cached client's (tests swap REDIS_URL inside one worker process): start over.
+  if (client && clientUrl !== url) {
+    client.destroy();
+    client = null;
+  }
   let c = client;
   if (!c) {
     c = client = makeClient(url);
+    clientUrl = url;
     c.on("error", (err) => logRedisError("connection", err));
     // Callers during the first handshake wait for it (max 1 s); afterwards a down Redis fails immediately.
     firstWait = Promise.race([c.connect(), new Promise((r) => setTimeout(r, 1000))]).catch(() => {}); // errors: `error` event

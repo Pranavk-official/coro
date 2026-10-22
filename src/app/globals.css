@@ -409,9 +409,56 @@ h3 {
     background-position: 0 -410px, 19px -507px;
   }
 }
+/* Landing features (components/landing/Features.tsx). */
+.feat-dots {
+  background-image: radial-gradient(color-mix(in oklab, var(--accent) 22%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to bottom, #000 30%, transparent 75%);
+}
+.feat-wave {
+  transform-origin: center;
+  animation: feat-wave 1.2s ease-in-out infinite;
+}
+.feat-float {
+  animation: feat-float 4.5s ease-in-out infinite;
+}
+.feat-marquee {
+  animation: feat-marquee 22s linear infinite;
+}
+.feat-marquee-rev {
+  animation: feat-marquee 26s linear infinite reverse;
+}
+@keyframes feat-wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes feat-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -6px;
+  }
+}
+/* Two copies of the strip: moving by half its width loops seamlessly. */
+@keyframes feat-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .blur-in,
-  .landing-dust {
+  .landing-dust,
+  .feat-wave,
+  .feat-float,
+  .feat-marquee,
+  .feat-marquee-rev {
     animation: none;
   }
 }

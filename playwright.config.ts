@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "tests",
   fullyParallel: true,
-  workers: 4, // more parallel WebRTC browsers starve each other and calls flake
+  workers: 3, // more parallel WebRTC browsers starve each other and calls flake (4 flaked share/recording tests; 3 was clean and faster)
   reporter: [["list"], ["html", { open: "never" }]],
   projects: [
     { name: "unit", testMatch: /unit\/.*\.test\.ts/ },
