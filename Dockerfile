@@ -23,7 +23,8 @@ RUN bun install --frozen-lockfile --production
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/src/generated ./src/generated
-COPY server.ts tsconfig.json ./
+# next.config.ts too: without it the runtime falls back to defaults (cacheComponents off) and `/` 500s on headers()
+COPY server.ts tsconfig.json next.config.ts ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 COPY src/lib/socket.io ./src/lib/socket.io
