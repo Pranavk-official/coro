@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@heroui/react";
 import {
   ArrowRight,
@@ -40,13 +40,23 @@ const WORDS = ["Meet", "Teach", "Pitch", "Catch up"];
 /** Hero verb that blurs in, one word at a time. Screen readers get the static h1 label instead. */
 function RotatingWord() {
   const [i, setI] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t = setInterval(() => setI((n) => (n + 1) % WORDS.length), 2400);
     return () => clearInterval(t);
   }, []);
+  // Same element, new text, replayed fade: remounting it per word (key) made every word a new LCP candidate,
+  // and fading the first word in from opacity 0 delayed LCP by the whole animation.
+  useEffect(() => {
+    if (i)
+      ref.current?.animate(
+        [{ opacity: 0, filter: "blur(12px)", transform: "translateY(0.15em)" }, {}],
+        { duration: 700, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+      );
+  }, [i]);
   return (
-    <span key={i} className="blur-in inline-block">
+    <span ref={ref} className="inline-block">
       {WORDS[i]}
     </span>
   );

@@ -47,7 +47,7 @@ function Waveform() {
 function RecordingVisual() {
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="flex items-center gap-2 rounded-full bg-danger px-4 py-2 font-mono text-[15px] font-semibold text-white shadow-lg">
+      <span className="flex items-center gap-2 rounded-full bg-[#d70015] px-4 py-2 font-mono text-[15px] font-semibold text-white shadow-lg">
         <span className="size-2.5 animate-pulse rounded-full bg-white" /> REC 04:12
       </span>
       <span className="h-6 w-px bg-[linear-gradient(var(--danger),transparent)]" />

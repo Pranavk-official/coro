@@ -1,13 +1,21 @@
 "use client";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import Particles, { ParticlesProvider } from "@tsparticles/react";
-import type { Container, Engine, ISourceOptions } from "@tsparticles/engine";
-import { loadSlim } from "@tsparticles/slim";
+import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import type { Container, ISourceOptions } from "@tsparticles/engine";
 
-/** Module-level and stable: ParticlesProvider throws if its init callback changes between renders. */
-const init = async (engine: Engine) => {
-  await loadSlim(engine);
-};
+const SparklesCanvas = lazy(() => import("@/components/ui/SparklesCanvas"));
+
+const WAKE = ["pointermove", "pointerdown", "scroll", "keydown"] as const;
+
+/** Runs `cb` on the visitor's first interaction: on slow phones the particle loop competed with load (Lighthouse TBT). */
+function afterInteraction(cb: () => void) {
+  const go = () => {
+    stop();
+    cb();
+  };
+  const stop = () => WAKE.forEach((t) => window.removeEventListener(t, go));
+  WAKE.forEach((t) => window.addEventListener(t, go, { once: true, passive: true }));
+  return stop;
+}
 
 type Props = {
   className?: string;
@@ -22,8 +30,8 @@ type Props = {
 };
 
 /**
- * ui-layouts "Sparkles" on tsParticles v4 (provider API). Starts only once its box is near the viewport and never
- * under prefers-reduced-motion. Options are memoised: `<Particles>` reloads whenever the options object changes.
+ * ui-layouts "Sparkles" on tsParticles v4 (provider API). Starts only after the first interaction, once its box is near
+ * the viewport, and never under prefers-reduced-motion. Particle count scales with screen width (phones get fewer). Options are memoised: `<Particles>` reloads whenever the options object changes.
  */
 export default function Sparkles({
   className = "",
@@ -36,7 +44,8 @@ export default function Sparkles({
 }: Props) {
   const id = `sparkles-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const box = useRef<HTMLDivElement>(null);
-  const [run, setRun] = useState(false);
+  // 0 = not started; otherwise the density scale for this screen.
+  const [run, setRun] = useState(0);
   const container = useRef<Container | undefined>(undefined);
   const visible = useRef(false);
   const [themed, setThemed] = useState<string | null>(null);
@@ -64,14 +73,17 @@ export default function Sparkles({
       ([e]) => {
         visible.current = !!e?.isIntersecting;
         if (visible.current) {
-          setRun(true);
+          setRun(Math.min(1, window.innerWidth / 1280));
           container.current?.play();
         } else container.current?.pause();
       },
       { rootMargin: "100px" },
     );
-    io.observe(el);
-    return () => io.disconnect();
+    const stop = afterInteraction(() => io.observe(el));
+    return () => {
+      stop();
+      io.disconnect();
+    };
   }, []);
 
   // Stable: <Particles> reloads whenever this callback's identity changes.
@@ -89,29 +101,23 @@ export default function Sparkles({
       particles: {
         // v4 moved colour under `paint` (a top-level `color` is silently ignored).
         paint: { fill: { enable: true, color: { value: color ?? "#ffffff" } } },
-        number: { value: density },
+        number: { value: Math.round(density * run) },
         size: { value: { min: size / 1.5, max: size } },
         opacity: { value: { min: 0.1, max: 1 }, animation: { enable: true, sync: false, speed: opacitySpeed } },
         move: { enable: true, direction, straight: true, speed: { min: speed / 130, max: speed } },
       },
     }),
-    [color, density, size, speed, opacitySpeed, direction],
+    [color, density, run, size, speed, opacitySpeed, direction],
   );
 
   return (
     <div ref={box} aria-hidden className={className}>
       {/* Wait for the colour: changing options while the first load is in flight leaves an empty canvas.
           A new colour (theme switch) remounts instead of reloading the same container. */}
-      {run && color ? (
-        <ParticlesProvider init={init}>
-          <Particles
-            key={color}
-            id={id}
-            options={options}
-            className="h-full w-full"
-            particlesLoaded={onLoaded}
-          />
-        </ParticlesProvider>
+      {run > 0 && color ? (
+        <Suspense>
+          <SparklesCanvas key={color} id={id} options={options} onLoaded={onLoaded} />
+        </Suspense>
       ) : null}
     </div>
   );

@@ -394,16 +394,6 @@ h3 {
   border-top: 1px solid color-mix(in oklab, var(--accent) 45%, var(--separator));
   box-shadow: 0 -30px 90px -30px color-mix(in oklab, var(--accent) 70%, transparent);
 }
-.blur-in {
-  animation: blur-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-@keyframes blur-in {
-  from {
-    opacity: 0;
-    filter: blur(12px);
-    transform: translateY(0.15em);
-  }
-}
 @keyframes landing-drift {
   to {
     background-position: 0 -410px, 19px -507px;
@@ -474,7 +464,6 @@ h3 {
 }
 @media (prefers-reduced-motion: reduce) {
   .peek-wobble,
-  .blur-in,
   .landing-dust,
   .feat-wave,
   .feat-float,
