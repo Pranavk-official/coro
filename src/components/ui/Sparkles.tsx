@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Particles, { ParticlesProvider } from "@tsparticles/react";
-import type { Engine, ISourceOptions } from "@tsparticles/engine";
+import type { Container, Engine, ISourceOptions } from "@tsparticles/engine";
 import { loadSlim } from "@tsparticles/slim";
 
 /** Module-level and stable: ParticlesProvider throws if its init callback changes between renders. */
@@ -37,6 +37,8 @@ export default function Sparkles({
   const id = `sparkles-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const box = useRef<HTMLDivElement>(null);
   const [run, setRun] = useState(false);
+  const container = useRef<Container | undefined>(undefined);
+  const visible = useRef(false);
   const [themed, setThemed] = useState<string | null>(null);
   const color = fixed ?? themed;
 
@@ -57,9 +59,25 @@ export default function Sparkles({
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const el = box.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => e?.isIntersecting && setRun(true), { rootMargin: "200px" });
+    // Start when first near the viewport; afterwards pause off-screen so scrolling past doesn't pay for it.
+    const io = new IntersectionObserver(
+      ([e]) => {
+        visible.current = !!e?.isIntersecting;
+        if (visible.current) {
+          setRun(true);
+          container.current?.play();
+        } else container.current?.pause();
+      },
+      { rootMargin: "100px" },
+    );
     io.observe(el);
     return () => io.disconnect();
+  }, []);
+
+  // Stable: <Particles> reloads whenever this callback's identity changes.
+  const onLoaded = useCallback(async (c?: Container) => {
+    container.current = c;
+    if (!visible.current) c?.pause();
   }, []);
 
   const options = useMemo<ISourceOptions>(
@@ -86,7 +104,13 @@ export default function Sparkles({
           A new colour (theme switch) remounts instead of reloading the same container. */}
       {run && color ? (
         <ParticlesProvider init={init}>
-          <Particles key={color} id={id} options={options} className="h-full w-full" />
+          <Particles
+            key={color}
+            id={id}
+            options={options}
+            className="h-full w-full"
+            particlesLoaded={onLoaded}
+          />
         </ParticlesProvider>
       ) : null}
     </div>
