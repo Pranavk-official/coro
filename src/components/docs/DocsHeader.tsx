@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Rocket, Settings2, Wrench } from "lucide-react";
+import { BookOpen, GitPullRequest, Rocket, Settings2, Wrench } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
 import BrandMark from "@/components/layout/BrandMark";
 import ThemeSwitcher from "@/components/layout/ThemeSwitcher";
@@ -9,7 +9,7 @@ import DocsSearch from "@/components/docs/DocsSearch";
 import { DOCS_NAV, DOCS_PAGES } from "@/lib/docs/nav";
 import { SITE } from "@/lib/utils/site";
 
-const ICON = { "Getting started": BookOpen, Deploy: Rocket, Configure: Settings2, Operate: Wrench } as Record<string, typeof BookOpen>;
+const ICON = { "Getting started": BookOpen, Deploy: Rocket, Configure: Settings2, Operate: Wrench, Contribute: GitPullRequest } as Record<string, typeof BookOpen>;
 
 /**
  * Docs-only header, after HeroUI's docs: brand + search + links on top, section tabs underneath. Sticky, full

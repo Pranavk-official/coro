@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
 import SignInModal from "@/components/auth/SignInModal";
+import Sparkles from "@/components/ui/Sparkles";
 import { SITE } from "@/lib/utils/site";
 import MeetingInput from "@/components/lobby/MeetingInput";
 import Features from "@/components/landing/Features";
@@ -141,7 +142,14 @@ function Hero() {
   return (
     <section className="relative isolate overflow-hidden px-4 pb-20 pt-28 sm:px-6 sm:pt-36">
       <div aria-hidden className="landing-grid absolute inset-0 -z-10" />
-      <div aria-hidden className="landing-dust absolute inset-x-0 top-0 -z-10 h-[520px]" />
+      {/* Sparkles under the top glow (around the nav, pill and headline), fading out to the sides and downward. */}
+      <Sparkles
+        density={600}
+        size={1.3}
+        speed={0.4}
+        opacitySpeed={1.5}
+        className="absolute inset-x-0 top-0 -z-10 h-[560px] [--sparkle-color:#0058b8] [mask-image:radial-gradient(60%_100%_at_50%_0%,#000_30%,transparent)] dark:[--sparkle-color:#5ab0ff]"
+      />
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 text-center">
         <a
           href="#how"
@@ -214,6 +222,14 @@ function HowItWorks() {
   return (
     <section id="how" className="relative isolate scroll-mt-20 overflow-hidden px-4 pb-24 pt-44 sm:px-6 sm:pt-56">
       <div aria-hidden className="landing-rays absolute inset-x-0 top-0 -z-10 h-[460px]" />
+      {/* Sparkles rise from behind the horizon: the arc below is painted over their lower edge. */}
+      {/* Deeper blue on the light page, lighter on black: the accent alone washes out on white. */}
+      <Sparkles
+        density={700}
+        size={1.3}
+        speed={0.8}
+        className="absolute inset-x-0 top-0 -z-10 h-[200px] [--sparkle-color:#0058b8] [mask-image:radial-gradient(55%_100%_at_50%_100%,#000_35%,transparent)] dark:[--sparkle-color:#5ab0ff] sm:h-[240px]"
+      />
       <div aria-hidden className="landing-arc absolute left-1/2 top-[150px] -z-10 aspect-square w-[260%] -translate-x-1/2 rounded-full sm:top-[190px] sm:w-[160%]" />
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 text-center">
         <span className="rounded-full bg-accent px-3 py-1 text-[13px] text-accent-foreground">Your link. Your rules.</span>
@@ -396,6 +412,7 @@ function Footer() {
           <a href="#pricing" className="hover:text-foreground">Pricing</a>
           <a href="#faq" className="hover:text-foreground">FAQ</a>
           <a href="/docs" className="hover:text-foreground">Self-host</a>
+          <a href="/docs/contributing" className="hover:text-foreground">Contribute</a>
           <a href="/privacy" className="hover:text-foreground">Privacy</a>
           <a href="/terms" className="hover:text-foreground">Terms</a>
           <a href={SITE.repo} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-foreground">

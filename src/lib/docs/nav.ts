@@ -89,6 +89,23 @@ export const DOCS_NAV: { group: string; items: DocLink[] }[] = [
       },
     ],
   },
+  {
+    group: "Contribute",
+    items: [
+      {
+        href: "/docs/contributing/development",
+        title: "Local development",
+        description: "Run Coro on your machine with live reload, a local inbox for sign-in mail, and the full test suite.",
+        toc: [["setup", "Set up"], ["scripts", "Dev scripts"], ["layout", "Code layout"], ["database", "Database changes"], ["tests", "Tests"]],
+      },
+      {
+        href: "/docs/contributing",
+        title: "Contributing",
+        description: "How to report bugs, propose features and send changes, and the conventions reviews check for.",
+        toc: [["ways", "Ways to help"], ["conventions", "Conventions"], ["pull-requests", "Pull requests"], ["security", "Security"]],
+      },
+    ],
+  },
 ];
 
 export const DOCS_PAGES: (DocLink & { group: string })[] = DOCS_NAV.flatMap((g) => g.items.map((i) => ({ ...i, group: g.group })));

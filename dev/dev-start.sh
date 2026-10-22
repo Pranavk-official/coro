@@ -7,7 +7,7 @@ COMPOSE="docker compose -f docker-compose.dev.yml"
 usage() {
   cat <<'EOF'
 Usage: dev-start.sh -S [-Sd|-Sb|-Sl] | -h
-  -S   db + minio + redis up, wait healthy, migrate dev, run dev server
+  -S   db + minio + redis + mailpit up, wait healthy, migrate dev, run dev server
   -Sd  services only, detached (no migrate, no dev server)
   -Sb  pull/build images first, then -S
   -Sl  follow service logs
@@ -26,11 +26,11 @@ wait_healthy() {
 
 case "${1:-}" in
   -h) usage ;;
-  -Sd) $COMPOSE up -d db minio redis ;;
+  -Sd) $COMPOSE up -d db minio redis mailpit ;;
   -Sb) $COMPOSE pull; $COMPOSE build; exec "$0" -S ;;
   -Sl) exec $COMPOSE logs -f ;;
   -S)
-    $COMPOSE up -d db minio redis
+    $COMPOSE up -d db minio redis mailpit
     wait_healthy
     (cd .. && bunx prisma migrate dev && bun run dev)
     ;;

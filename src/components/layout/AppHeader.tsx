@@ -43,10 +43,13 @@ const Logo = () => (
   </Link>
 );
 
-/** Round icon CTA that slides its label out on hover/focus (always open on phones). */
+/**
+ * Round icon CTA that slides its label out on hover/focus (always open on phones). The label carries the gap to the
+ * icon itself (not the button's `gap`), so when it's collapsed the icon sits dead centre in a 36px circle.
+ */
 function PillLabel({ children }: { children: string }) {
   return (
-    <span className="max-w-24 overflow-hidden whitespace-nowrap transition-[max-width] duration-300 md:max-w-0 md:group-hover:max-w-24 md:group-focus-visible:max-w-24">
+    <span className="mr-1.5 max-w-24 overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-300 md:mr-0 md:max-w-0 md:group-hover:mr-1.5 md:group-hover:max-w-24 md:group-focus-visible:mr-1.5 md:group-focus-visible:max-w-24">
       {children}
     </span>
   );
@@ -126,7 +129,7 @@ export default function AppHeader() {
           {(!isPending || isRefetching) &&
             (session?.user ? (
               <AlertDialog>
-                <Button variant="secondary" size="sm" className="group h-9 gap-1.5 rounded-full px-3">
+                <Button variant="secondary" size="sm" className="group h-9 min-w-9 gap-0 rounded-full px-[10px]">
                   <PillLabel>Sign out</PillLabel>
                   <LogOut size={16} aria-hidden />
                 </Button>
@@ -171,7 +174,7 @@ export default function AppHeader() {
               </AlertDialog>
             ) : (
               <SignInModal>
-                <Button variant="primary" size="sm" className="group h-9 gap-1.5 rounded-full px-3">
+                <Button variant="primary" size="sm" className="group h-9 min-w-9 gap-0 rounded-full px-[10px]">
                   <PillLabel>Sign in</PillLabel>
                   <LogIn size={16} aria-hidden />
                 </Button>

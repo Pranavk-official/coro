@@ -1,0 +1,46 @@
+name: Bug report
+description: Something doesn't work the way it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start a meeting
+        2. Join from a second device
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often
+      options: [Every time, Sometimes, Once]
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Browser, OS and device
+      placeholder: Chrome 141 on macOS, Safari on iPhone 15
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options: [My own self-hosted instance, Local development, A public instance]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Browser console errors and `docker compose logs app` output. Remove secrets first.
+      render: shell

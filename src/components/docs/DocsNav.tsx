@@ -9,10 +9,10 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 function Links({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {DOCS_NAV.map((g) => (
         <div key={g.group} className="flex flex-col gap-0.5">
-          <p className="px-3 pb-1 text-[12px] font-semibold tracking-wide text-muted uppercase">{g.group}</p>
+          <p className="px-3 pb-0.5 text-[12px] font-semibold tracking-wide text-muted uppercase">{g.group}</p>
           {g.items.map((i) => {
             const on = path === i.href;
             return (
@@ -21,7 +21,7 @@ function Links({ onNavigate }: { onNavigate?: () => void }) {
                 href={i.href}
                 onClick={onNavigate}
                 aria-current={on ? "page" : undefined}
-                className={`rounded-xl px-3 py-1 text-[15px] transition-colors ${
+                className={`rounded-xl px-3 py-[3px] text-[15px] transition-colors ${
                   on ? "bg-accent/12 font-semibold text-accent" : "text-foreground/80 hover:bg-foreground/5 hover:text-foreground"
                 }`}
               >

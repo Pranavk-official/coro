@@ -25,7 +25,7 @@ setup("auth setup: host + member storageState", async ({ browser }) => {
 setup("warm dev routes (first compile reloads the page in dev)", async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  for (const route of ["/", "/sign-in", "/new", "/rooms/abc-defg-hij", "/check-email", "/magic-link", "/forgot-password", "/reset-password", "/verify-email", "/profile", "/privacy", "/terms", "/delete-account", "/docs"]) {
+  for (const route of ["/", "/sign-in", "/new", "/rooms/abc-defg-hij", "/check-email", "/magic-link", "/forgot-password", "/reset-password", "/verify-email", "/profile", "/privacy", "/terms", "/delete-account", "/docs", "/docs/contributing", "/docs/contributing/development"]) {
     await page.goto(route);
     await page.waitForLoadState("load");
     await page.waitForTimeout(300);

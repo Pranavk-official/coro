@@ -88,14 +88,14 @@ All 32 shots (3 devices × 2 themes × 5 screens, plus the full desktop landing 
 ```bash
 bun install
 cp dev/.env.dev.example .env   # defaults work as-is
-./dev/dev-start.sh -S          # Postgres + MinIO + Redis up, migrate, dev server
+./dev/dev-start.sh -S          # Postgres + MinIO + Redis + Mailpit up, migrate, dev server
 ```
 
 Open <http://localhost:3000>.
 
 > [!TIP]
-> Auth emails (magic links, verification, reset) go to Mailpit. Start it with
-> `docker compose -f dev/docker-compose.dev.yml up -d mailpit` and read mail at <http://localhost:18025>.
+> Auth emails (magic links, verification, reset) go to Mailpit, which `dev-start.sh` starts with the other
+> services. Read mail at <http://localhost:18025>.
 
 ### Sign-in providers
 
@@ -216,6 +216,10 @@ Metadata lives in `src/app/`: `opengraph-image.tsx` (generated OG/Twitter card),
 
 Request flow: hook → typed `hc` client → Hono route (zod) → service (Prisma + libs). Every HTTP error uses one envelope: `{ success: false, message, error: { code } }`.
 
+
+## Contributing
+
+Bug reports, fixes and docs improvements are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions and the pull request checklist; the same guide is at `/docs/contributing` on any running instance.
 
 ## License
 

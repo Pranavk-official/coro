@@ -64,7 +64,7 @@ test("E62 @regression docs: header → intro, sidebar nav, real deploy files, hi
   await p.getByRole("button", { name: /TURN relay/ }).click();
   await p.getByRole("dialog").getByRole("link", { name: "Troubleshooting" }).click();
   await expect(p.getByRole("heading", { level: 1, name: "Troubleshooting" })).toBeVisible();
-  for (const href of ["/docs", "/docs/quick-start", "/docs/deploy/paas", "/docs/configuration", "/docs/sign-in"]) {
+  for (const href of ["/docs", "/docs/quick-start", "/docs/deploy/paas", "/docs/configuration", "/docs/sign-in", "/docs/contributing", "/docs/contributing/development"]) {
     await p.goto(href);
     await expect(p.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), href).toBe(true);
