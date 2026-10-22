@@ -26,6 +26,8 @@ export const LIMITS = {
   "rooms:get": { max: 60, windowSec: MIN },
   ice: { max: 30, windowSec: 10 * MIN },
   "storage:presign": { max: 60, windowSec: MIN },
+  "recordings:read": { max: 60, windowSec: MIN },
+  "recordings:write": { max: 30, windowSec: MIN },
   "sock:connect": { max: 30, windowSec: MIN },
   "sock:join": { max: 20, windowSec: MIN },
   "sock:signal": { max: 600, windowSec: MIN },

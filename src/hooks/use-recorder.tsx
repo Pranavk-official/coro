@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { composeMeeting, downloadBlob, MAX_RECORDING_MS, pickMime, startRecording, type RecFormat } from "@/lib/media-recorder/recorder";
 import { uploadToDrive } from "@/lib/google-drive/client";
 import { notify } from "@/lib/toast";
+import { useSaveRecording } from "@/hooks/use-recordings";
 
 export type RecordOptions = { format: RecFormat; compressed: boolean; driveAccountId: string | null };
 
@@ -16,7 +17,25 @@ type Active = {
 
 /** Whole-meeting recording (spec 003, device + optional Drive copy). `onChange` broadcasts the REC flag. */
 /** `root`: the call's container; its <video> elements are what gets recorded. */
-export function useRecorder({ code, root, onChange }: { code: string; root: () => Element | null; onChange: (recording: boolean) => void }) {
+export function useRecorder({
+  code,
+  roomName,
+  root,
+  onChange,
+}: {
+  code: string;
+  /** Shown in the profile's recordings list; falls back to the code. */
+  roomName?: string;
+  root: () => Element | null;
+  onChange: (recording: boolean) => void;
+}) {
+  const save = useSaveRecording();
+  const saveRef = useRef(save);
+  const nameRef = useRef(roomName);
+  useEffect(() => {
+    saveRef.current = save;
+    nameRef.current = roomName;
+  });
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const active = useRef<Active | null>(null);
@@ -39,11 +58,23 @@ export function useRecorder({ code, root, onChange }: { code: string; root: () =
     const name = `${code}-${new Date(rec.startedAt).toISOString().replace(/[:.]/g, "-")}.${ext}`;
     downloadBlob(blob, name);
     const size = `${(blob.size / 1024 / 1024).toFixed(1)} MB`;
+    // A reference for the profile page; a failure here never blocks the files themselves.
+    const ref = await saveRef.current.create
+      .mutateAsync({
+        roomCode: code,
+        roomName: nameRef.current || code,
+        name,
+        mimeType: blob.type || `video/${ext}`,
+        bytes: blob.size,
+        durationMs: Date.now() - rec.startedAt,
+      })
+      .catch(() => null);
     notify("rec-saved", { title: `Recording saved · ${size}`, description: "Downloaded to this device", variant: "success" }, 6000);
     if (rec.opts.driveAccountId) {
       notify("rec-drive", { title: "Uploading to Google Drive…", variant: "default" }, 60_000);
       try {
         const id = await uploadToDrive(rec.opts.driveAccountId, blob, name);
+        if (ref) void saveRef.current.attachDrive.mutateAsync({ id: ref.id, driveFileId: id }).catch(() => undefined);
         notify(
           "rec-drive",
           {

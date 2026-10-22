@@ -30,6 +30,11 @@ export default function Page() {
           may join), and a hash of the meeting password if you set one.
         </li>
         <li>
+          <strong>Recording details</strong> — when you save a recording we keep a short note of it so your profile can
+          list it: the meeting name and code, file name, length, size, and the Google Drive link if you saved it there.
+          Never the recording itself. Remove an entry from your profile at any time.
+        </li>
+        <li>
           <strong>Sign-in sessions</strong> — a session cookie, plus the IP address and browser type of each session so you
           and we can spot misuse.
         </li>

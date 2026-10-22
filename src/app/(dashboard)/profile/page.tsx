@@ -8,6 +8,7 @@ import { initials } from "@/lib/utils/initials";
 import AppHeader from "@/components/layout/AppHeader";
 import PageIntro, { PageBackdrop } from "@/components/layout/PageIntro";
 import DriveCard from "@/components/profile/DriveCard";
+import RecordingsCard from "@/components/profile/RecordingsCard";
 import DeleteAccountCard from "@/components/profile/DeleteAccountCard";
 
 export default function Page() {
@@ -26,7 +27,7 @@ export default function Page() {
         <PageBackdrop />
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 pb-16 pt-28 sm:px-6 sm:pt-36">
           <PageIntro pill="Your account" title="Profile," accent="your way.">
-            Connect your Drive, check your details, or leave for good.
+            Your recordings, your Drive, your details.
           </PageIntro>
           {!user || guest ? (
             <div className="flex flex-col gap-4">
@@ -45,6 +46,7 @@ export default function Page() {
                   <p className="truncate text-muted">{user.email}</p>
                 </div>
               </section>
+              <RecordingsCard />
               <DriveCard />
               <DeleteAccountCard email={user.email} />
               <p className="flex gap-6 px-2 pt-2 text-[14px] text-muted">

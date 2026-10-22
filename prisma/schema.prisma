@@ -24,6 +24,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   rooms         Room[]
+  recordings    Recording[]
 
   @@unique([email])
   @@map("user")
@@ -93,4 +94,24 @@ model Room {
 
   @@index([hostId])
   @@map("room")
+}
+
+/// A saved recording (spec 003). Only a reference: the file itself lives on the user's device and/or Google Drive.
+/// Not tied to Room: instant rooms are deleted when they end, and their recordings should stay listed.
+model Recording {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomCode     String
+  roomName     String
+  name         String
+  mimeType     String
+  bytes        Int      @default(0)
+  durationMs   Int      @default(0)
+  destinations String[] // "device" | "drive"
+  driveFileId  String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("recording")
 }

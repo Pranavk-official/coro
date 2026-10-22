@@ -111,6 +111,7 @@ export default function Call({
   const callRef = useRef<HTMLElement>(null);
   const recorder = useRecorder({
     code,
+    roomName: roomInfo.data?.name,
     root: useCallback(() => callRef.current, []),
     onChange: useCallback((recording: boolean) => setMedia({ recording }), [setMedia]),
   });

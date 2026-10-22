@@ -30,6 +30,7 @@ import { glassBackdrop, glassContainer, glassDialog } from "@/components/ui/glas
 // Landing sections (signed-out only).
 const LINKS = [
   ["How it works", "/#how"],
+  ["Features", "/#features"],
   ["Pricing", "/#pricing"],
   ["FAQ", "/#faq"],
 ] as const;
