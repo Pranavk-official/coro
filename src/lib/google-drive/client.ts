@@ -28,15 +28,39 @@ export async function connectDrive(): Promise<string | null> {
     return null;
   }
   popup.location.href = data.url;
+  // No `popup.closed` polling: Google's pages set COOP, so every poll logs a warning while they're open.
+  // /linked announces itself on a BroadcastChannel; a user who just closes the popup brings focus back here.
   await new Promise<void>((resolve) => {
-    const t = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(t);
-        resolve();
-      }
-    }, 500);
+    const channel = new BroadcastChannel(LINKED_CHANNEL);
+    const done = () => {
+      channel.close();
+      window.removeEventListener("focus", onFocus);
+      resolve();
+    };
+    const onFocus = () => {
+      if (popup.closed) done();
+    };
+    channel.onmessage = done;
+    window.addEventListener("focus", onFocus);
   });
   return driveAccountId();
+}
+
+export const LINKED_CHANNEL = "coro-drive-linked";
+
+/** Google's reason for a failed Drive call, in words the user can act on. */
+async function driveError(res: Response, step: string): Promise<Error> {
+  const body = (await res.json().catch(() => null)) as { error?: { message?: string; errors?: { reason?: string }[] } } | null;
+  const reason = body?.error?.errors?.[0]?.reason ?? "";
+  const known: Record<string, string> = {
+    accessNotConfigured: "the Google Drive API isn't enabled for this app's Google Cloud project",
+    insufficientPermissions: "Drive access wasn't granted. Reconnect Google Drive on your profile",
+    ACCESS_TOKEN_SCOPE_INSUFFICIENT: "Drive access wasn't granted. Reconnect Google Drive on your profile",
+    storageQuotaExceeded: "your Google Drive is full",
+    userRateLimitExceeded: "Google is rate limiting uploads. Try again in a minute",
+  };
+  console.error(`[drive] ${step} ${res.status}`, reason, body?.error?.message);
+  return new Error(known[reason] ?? body?.error?.message ?? `drive_${step}_${res.status}`);
 }
 
 /** Resumable session + one PUT of the whole file; returns the Drive file id. */
@@ -49,10 +73,11 @@ export async function uploadToDrive(accountId: string, blob: Blob, name: string)
     headers: { ...auth, "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": blob.type },
     body: JSON.stringify({ name, mimeType: blob.type }),
   });
+  if (!start.ok) throw await driveError(start, "start");
   const session = start.headers.get("Location");
-  if (!start.ok || !session) throw new Error(`drive_start_${start.status}`);
+  if (!session) throw new Error("drive_start_no_session");
   // shortcut: single PUT, no resume on network drop; chunk with Content-Range if large uploads fail.
   const put = await fetch(session, { method: "PUT", headers: auth, body: blob });
-  if (!put.ok) throw new Error(`drive_upload_${put.status}`);
+  if (!put.ok) throw await driveError(put, "upload");
   return ((await put.json()) as { id: string }).id;
 }

@@ -48,3 +48,28 @@ test("E52 profile is for signed-in accounts only", async ({ page }) => {
   await page.goto("/profile");
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fprofile|\/sign-in\?next=\/profile/, { timeout: 10_000 });
 });
+
+test("E59 @regression Drive 403 surfaces Google's reason (API not enabled), local copy still saved", async ({ browser }) => {
+  const { ctx, page } = await asRole(browser, "member");
+  await fakeDriveLinked(page);
+  await page.route("**/api/auth/get-access-token", (r) => r.fulfill({ json: { accessToken: "fake", accessTokenExpiresAt: null } }));
+  await page.route("https://www.googleapis.com/upload/drive/v3/**", (r) =>
+    r.fulfill({
+      status: 403,
+      json: { error: { code: 403, message: "Google Drive API has not been used in project 123", errors: [{ reason: "accessNotConfigured" }] } },
+    }),
+  );
+  const room = await createRoomAs(ctx.request, { name: "E59", kind: "instant" });
+  await enterCall(page, room.code);
+  await page.getByRole("button", { name: "Record", exact: true }).click();
+  const drive = page.getByRole("switch", { name: "Also save to Google Drive" });
+  await expect(drive).toBeVisible({ timeout: 15_000 });
+  if (!(await drive.isChecked())) await page.getByText("Also save to Google Drive").click(); // input is visually hidden
+  await page.getByRole("button", { name: "Start recording" }).click();
+  await page.waitForTimeout(1500);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: /^Stop recording/ }).click();
+  await download; // the device copy is still saved
+  await expect(page.getByText(/Google Drive API isn't enabled/)).toBeVisible({ timeout: 10_000 });
+  await ctx.close();
+});
