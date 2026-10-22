@@ -1,0 +1,22 @@
+# HTTPS in front of the app with automatic Let's Encrypt certificates.
+#   docker compose -f docker-compose.yml -f deploy/caddy.compose.yml up -d --build
+# Needs DOMAIN in .env (e.g. DOMAIN=meet.example.com) and ports 80 + 443 open.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

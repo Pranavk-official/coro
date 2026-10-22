@@ -40,6 +40,8 @@ function presignClient(): S3Client {
 }
 
 export async function ensureBucket(): Promise<void> {
+  // Bucket-scoped keys (R2, B2, IAM policies) may read a bucket but not create one: don't try if it's there.
+  if (await storageHealthy()) return;
   try {
     await baseClient().send(new CreateBucketCommand({ Bucket: bucket() }));
   } catch (err) {

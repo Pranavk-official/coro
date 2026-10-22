@@ -74,12 +74,16 @@ export default function SignInForm({ shell: Frame = AuthShell }: { shell?: Shell
           </Alert.Content>
         </Alert>
       ) : null}
-      <SocialButtons callbackURL={next} />
-      <div className="flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-current opacity-30" />
-        or
-        <span className="h-px flex-1 bg-current opacity-30" />
-      </div>
+      <SocialButtons
+        callbackURL={next}
+        divider={
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-current opacity-30" />
+            or
+            <span className="h-px flex-1 bg-current opacity-30" />
+          </div>
+        }
+      />
       <form
         className="flex flex-col gap-3"
         onSubmit={(e) => {

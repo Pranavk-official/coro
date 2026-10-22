@@ -452,7 +452,28 @@ h3 {
     transform: translateX(-50%);
   }
 }
+/* Landing peek tiles (hero + footer): idle bob + sway. Uses `transform` so it stacks on the tiles'
+   own `translate`/`rotate` (tilt and the desktop hover rise) instead of overriding them. */
+.peek-wobble {
+  animation: peek-wobble 3s ease-in-out infinite;
+}
+@keyframes peek-wobble {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  25% {
+    transform: translate(3px, -6px) rotate(5deg);
+  }
+  50% {
+    transform: translate(0, -2px) rotate(0);
+  }
+  75% {
+    transform: translate(-3px, -6px) rotate(-5deg);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
+  .peek-wobble,
   .blur-in,
   .landing-dust,
   .feat-wave,

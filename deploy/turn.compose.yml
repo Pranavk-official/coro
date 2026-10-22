@@ -1,0 +1,23 @@
+# TURN relay for callers behind strict NATs / corporate firewalls (coturn, host networking).
+#   docker compose -f docker-compose.yml -f deploy/turn.compose.yml up -d coturn
+# .env: TURN_HOST=<public IP or turn.example.com>, TURN_SECRET=<openssl rand -hex 32>,
+#       TURN_EXTERNAL_IP=<public IP>/<private IP>  (cloud VMs behind 1:1 NAT: AWS, GCP, Azure, Oracle)
+#                       or just <public IP> when the VM owns its public address (Hetzner, DigitalOcean, OVH)
+# Firewall: 3478/udp + 3478/tcp + 49160-49200/udp.
+services:
+  coturn:
+    image: coturn/coturn
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --realm=coro
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET:?set TURN_SECRET}
+      - --external-ip=${TURN_EXTERNAL_IP:?set TURN_EXTERNAL_IP}
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --no-multicast-peers
+      - --no-cli
+      - --fingerprint
+      - --log-file=stdout

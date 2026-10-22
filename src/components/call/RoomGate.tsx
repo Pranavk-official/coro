@@ -1,6 +1,7 @@
 "use client";
 import { useState, type ReactNode } from "react";
-import { Button, Card, CardContent, Spinner } from "@heroui/react";
+import Link from "next/link";
+import { Button, buttonVariants, Card, CardContent, Spinner } from "@heroui/react";
 import { useSession } from "@/lib/better-auth/client";
 import { authClient } from "@/lib/better-auth/client";
 import { useRoom } from "@/hooks/use-rooms";
@@ -56,17 +57,27 @@ function SignedOutGate({ roomName, allowGuests }: { roomName: string; allowGuest
       <Card className="w-full max-w-md rounded-card border border-hairline p-0 shadow-none">
         <CardContent className="flex flex-col gap-3 p-6 text-center">
           <h1 className="text-xl font-semibold">Join {roomName}</h1>
-          <SocialButtons callbackURL={typeof window === "undefined" ? "/" : window.location.pathname} />
+          <SocialButtons
+            callbackURL={typeof window === "undefined" ? "/" : window.location.pathname}
+            divider={allowGuests ? <div className="text-sm text-muted">or</div> : null}
+          />
           {allowGuests ? (
             <>
-              <div className="text-sm text-muted">or</div>
               <TextInput label="Your name" value={name} onChange={setName} placeholder="Dana" error={wait > 0 ? `Too many guests from your network. Try again in ${wait} s.` : error} className="w-full text-left" />
               <Button variant="primary" onPress={() => void continueAsGuest()} isDisabled={pending || wait > 0}>
                 Continue as guest
               </Button>
             </>
           ) : (
-            <p className="text-sm text-muted">Sign in required for this room.</p>
+            <>
+              <p className="text-sm text-muted">Sign in required for this room.</p>
+              <Link
+                href={`/sign-in?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`}
+                className={buttonVariants({ variant: "primary" })}
+              >
+                Sign in
+              </Link>
+            </>
           )}
         </CardContent>
       </Card>

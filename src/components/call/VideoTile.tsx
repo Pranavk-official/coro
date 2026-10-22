@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Chip } from "@heroui/react";
+import { Avatar, AvatarFallback, AvatarImage, Button, Chip } from "@heroui/react";
 import { Crown, MicOff, MonitorUp, Pin, PinOff, VideoOff } from "lucide-react";
 import { Mascot } from "page-mascot";
 import type { RemotePeer } from "@/hooks/use-call";
@@ -104,18 +104,20 @@ function PinButton({ label, pinned, onPin }: { label: string; pinned: boolean; o
   );
 }
 
+/** Mic/camera-off markers. Plain inline pills (HeroUI Badge positions itself absolutely and would sit on the pin button). */
 function Badges({ mic, cam }: { mic: boolean; cam: boolean }) {
+  const pill = "glass flex size-9 items-center justify-center rounded-full text-foreground";
   return (
     <div className="flex gap-1">
       {!mic && (
-        <Badge aria-label="Microphone off">
-          <MicOff size={14} />
-        </Badge>
+        <span role="img" aria-label="Microphone off" className={pill}>
+          <MicOff size={15} aria-hidden />
+        </span>
       )}
       {!cam && (
-        <Badge aria-label="Camera off">
-          <VideoOff size={14} />
-        </Badge>
+        <span role="img" aria-label="Camera off" className={pill}>
+          <VideoOff size={15} aria-hidden />
+        </span>
       )}
     </div>
   );

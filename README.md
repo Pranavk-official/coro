@@ -151,6 +151,8 @@ bunx tsc --noEmit && bun run lint
 
 ## Deploy
 
+Full self-hosting guide (VPS + Caddy or nginx, Dokploy/Coolify, Railway/Render/Fly.io, TURN, Google/GitHub sign-in, backups): **`/docs`** on any running instance, with the configs in [`deploy/`](deploy/).
+
 ```bash
 cp .env.example .env   # set POSTGRES_PASSWORD, MINIO_ROOT_PASSWORD, BETTER_AUTH_SECRET, INTERNAL_SECRET, ...
 docker compose up -d   # app on app:3000 inside the compose network, no host port; route your domain to it (migrations applied on boot), Postgres, MinIO, Redis

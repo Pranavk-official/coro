@@ -1,0 +1,5 @@
+# Caddy proxies WebSockets (Socket.IO) on its own; no extra config needed.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

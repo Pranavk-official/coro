@@ -29,5 +29,7 @@ COPY prisma.config.ts ./
 COPY src/lib/socket.io ./src/lib/socket.io
 COPY src/server ./src/server
 COPY src/lib ./src/lib
+# /docs reads the deploy files it shows (prerendered at build, kept for any runtime render)
+COPY deploy ./deploy
 EXPOSE 3000
 CMD ["node", "--import", "tsx", "server.ts"]

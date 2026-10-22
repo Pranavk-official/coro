@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   title: { default: `${SITE.name} — free browser video calls`, template: `%s · ${SITE.name}` },
   description: SITE.description,
   applicationName: SITE.name,
+  authors: [{ name: SITE.author.name, url: SITE.author.url }],
+  creator: SITE.author.name,
   keywords: ["video calls", "video conferencing", "online meeting", "WebRTC", "no download", "guest join", "waiting room"],
   alternates: { canonical: "/" },
   openGraph: {

@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
+  "author": "Pranav K (https://github.com/Pranavk-official)",
+  "repository": "github:Pranavk-official/coro",
   "type": "module",
   "scripts": {
     "dev": "tsx watch server.ts",
@@ -47,6 +49,7 @@
     "react-dom": "19.3.0",
     "react-icons": "^5.7.0",
     "redis": "^6.3.0",
+    "shiki": "4.5.0",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15",

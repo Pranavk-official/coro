@@ -33,6 +33,7 @@ const LINKS = [
   ["Features", "/#features"],
   ["Pricing", "/#pricing"],
   ["FAQ", "/#faq"],
+  ["Docs", "/docs"],
 ] as const;
 
 const Logo = () => (

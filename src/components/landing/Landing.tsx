@@ -16,7 +16,9 @@ import {
   Video,
   type LucideIcon,
 } from "lucide-react";
+import { FaGithub } from "react-icons/fa6";
 import SignInModal from "@/components/auth/SignInModal";
+import { SITE } from "@/lib/utils/site";
 import MeetingInput from "@/components/lobby/MeetingInput";
 import Features from "@/components/landing/Features";
 
@@ -75,9 +77,10 @@ function PeekTiles({ className = "", rise = false }: { className?: string; rise?
               "--r": `${rot}deg`,
               "--y": `${i % 2 ? 10 : 0}px`,
               transitionDelay: `${Math.abs(i - 3) * 40}ms`,
+              animationDelay: `${i * -0.37}s`,
             } as React.CSSProperties
           }
-          className={`flex size-12 items-center justify-center rounded-2xl text-white shadow-lg [rotate:var(--r)] [translate:0_var(--y)] sm:size-20 sm:rounded-3xl ${bg} ${i > 4 ? "max-sm:hidden" : ""} ${
+          className={`peek-wobble flex size-12 items-center justify-center rounded-2xl text-white shadow-lg [rotate:var(--r)] [translate:0_var(--y)] sm:size-20 sm:rounded-3xl ${bg} ${i > 4 ? "max-sm:hidden" : ""} ${
             rise
               ? "transition-[translate,rotate] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none [@media(hover:hover)]:[translate:0_calc(var(--y)+55%)] [@media(hover:hover)]:group-hover/shot:[rotate:calc(var(--r)*1.6)] [@media(hover:hover)]:group-hover/shot:[translate:0_calc(var(--y)-38%)]"
               : ""
@@ -381,14 +384,23 @@ function Footer() {
   return (
     <footer className="px-4 pb-4 pt-12 sm:px-6">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 border-t border-hairline px-2 py-6 text-[14px] text-muted">
-        <span>© {new Date().getFullYear()} Coro. Many voices, one room.</span>
+        <span>
+          © {new Date().getFullYear()} Coro · Made by{" "}
+          <a href={SITE.author.url} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline">
+            {SITE.author.name}
+          </a>
+        </span>
         <span className="flex flex-wrap gap-x-6 gap-y-2">
           <a href="#how" className="hover:text-foreground">How it works</a>
           <a href="#features" className="hover:text-foreground">Features</a>
           <a href="#pricing" className="hover:text-foreground">Pricing</a>
           <a href="#faq" className="hover:text-foreground">FAQ</a>
+          <a href="/docs" className="hover:text-foreground">Self-host</a>
           <a href="/privacy" className="hover:text-foreground">Privacy</a>
           <a href="/terms" className="hover:text-foreground">Terms</a>
+          <a href={SITE.repo} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-foreground">
+            <FaGithub size={14} aria-hidden /> Source (MIT)
+          </a>
           <span className="flex items-center gap-1">
             <Lock size={13} aria-hidden /> Peer-to-peer
           </span>

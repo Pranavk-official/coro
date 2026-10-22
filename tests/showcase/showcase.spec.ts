@@ -68,6 +68,15 @@ for (const device of Object.keys(DEVICES)) {
       await expect(host.page.getByText("Client demo")).toBeVisible({ timeout: 15000 });
       await shot(host.page, device, theme, "3-lobby");
 
+      // Profile with one saved recording (a reference row; the file itself would be on the device / in Drive).
+      await req.post("/api/recordings", {
+        data: { roomCode: room.code, roomName: "Design review", name: `${room.code}-demo.webm`, mimeType: "video/webm", bytes: 48_211_456, durationMs: 1_843_000 },
+      });
+      await host.page.goto("/profile");
+      await expect(host.page.getByRole("heading", { name: "Recordings" })).toBeVisible({ timeout: 15000 });
+      await expect(host.page.getByText(`${room.code}-demo.webm`)).toBeVisible({ timeout: 15000 });
+      await shot(host.page, device, theme, "6-profile");
+
       await host.page.goto(`/rooms/${room.code}`);
       await expect(host.page.getByText("Ready to join?", { exact: true })).toBeVisible({ timeout: 15000 });
       await host.page.waitForTimeout(1500); // camera preview + level meter settle
@@ -80,7 +89,7 @@ for (const device of Object.keys(DEVICES)) {
       ];
       for (const o of others) await enterCall(o.page, room.code);
       await others[1].page.getByRole("button", { name: "Turn camera off" }).click(); // one avatar tile for variety
-      await expect(host.page.getByRole("button", { name: /^Pin / })).toHaveCount(2, { timeout: 15000 });
+      await expect(host.page.getByRole("group", { name: /'s tile$/ })).toHaveCount(2, { timeout: 15000 });
       await expect(host.page.getByText(/ joined$/)).toHaveCount(0, { timeout: 15000 }); // join toasts gone
       await expectPlaying(remoteVideo(host.page, "Priya Shah"));
       await shot(host.page, device, theme, "5-call");

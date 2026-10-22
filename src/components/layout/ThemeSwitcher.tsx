@@ -53,12 +53,12 @@ export default function ThemeSwitcher({ collapsed = false }: { collapsed?: boole
 }
 
 /** Pages that render AppHeader, which already carries the theme rail. */
-const WITH_HEADER = new Set(["/", "/profile", "/privacy", "/terms"]);
+const WITH_HEADER = new Set(["/", "/profile", "/privacy", "/terms", "/docs"]);
 
 /** Floating top-right badge on every page without the app header. */
 export function ThemeBadge() {
   const path = usePathname();
-  if (WITH_HEADER.has(path)) return null;
+  if (WITH_HEADER.has(path) || path.startsWith("/docs/")) return null;
   return (
     <div className="fixed right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-50">
       <ThemeSwitcher collapsed />
