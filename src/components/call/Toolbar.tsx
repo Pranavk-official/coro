@@ -37,6 +37,7 @@ import DeviceDrawer from "@/components/call/DeviceDrawer";
 import RecordButton from "@/components/call/RecordButton";
 import { RecordPopover, RecordSheet } from "@/components/call/RecordSheet";
 import type { RecordOptions } from "@/hooks/use-recorder";
+import Tip from "@/components/ui/Tip";
 
 export default function Toolbar({
   state,
@@ -141,9 +142,11 @@ export default function Toolbar({
   // Host: Leave asks "Leave / End for everyone" on every screen size (phones too, not only under ⋯).
   const leaveButton = isHost ? (
     <DropdownRoot>
-      <Button variant="danger" className="h-12 px-5" aria-label="Leave options">
-        <PhoneOff size={18} /> Leave
-      </Button>
+      <Tip label="Leave or end for everyone">
+        <Button variant="danger" className="h-12 px-5" aria-label="Leave options">
+          <PhoneOff size={18} /> Leave
+        </Button>
+      </Tip>
       <DropdownPopover>
         <DropdownMenu
           onAction={(key) => {
@@ -233,16 +236,18 @@ export default function Toolbar({
   return (
     <div className="glass flex items-center gap-2 rounded-full p-2">
       <ButtonGroup>
-        <Button
-          isIconOnly
-          variant={state.mic ? "ghost" : "danger"}
-          className={`size-12 text-white ${state.mic ? "bg-white/15" : ""}`}
-          aria-label={state.mic ? "Mute microphone" : "Unmute microphone"}
-          aria-pressed={state.mic}
-          onPress={() => onToggle({ mic: !state.mic })}
-        >
-          {state.mic ? <Mic size={18} /> : <MicOff size={18} />}
-        </Button>
+        <Tip label={state.mic ? "Mute microphone" : "Unmute microphone"}>
+          <Button
+            isIconOnly
+            variant={state.mic ? "ghost" : "danger"}
+            className={`size-12 text-white ${state.mic ? "bg-white/15" : ""}`}
+            aria-label={state.mic ? "Mute microphone" : "Unmute microphone"}
+            aria-pressed={state.mic}
+            onPress={() => onToggle({ mic: !state.mic })}
+          >
+            {state.mic ? <Mic size={18} /> : <MicOff size={18} />}
+          </Button>
+        </Tip>
         <DeviceMenu
           label="Choose microphone"
           sections={[
@@ -255,16 +260,18 @@ export default function Toolbar({
         />
       </ButtonGroup>
       <ButtonGroup>
-        <Button
-          isIconOnly
-          variant={state.cam ? "ghost" : "danger"}
-          className={`size-12 text-white ${state.cam ? "bg-white/15" : ""}`}
-          aria-label={state.cam ? "Turn camera off" : "Turn camera on"}
-          aria-pressed={state.cam}
-          onPress={() => onToggle({ cam: !state.cam })}
-        >
-          {state.cam ? <Video size={18} /> : <VideoOff size={18} />}
-        </Button>
+        <Tip label={state.cam ? "Turn camera off" : "Turn camera on"}>
+          <Button
+            isIconOnly
+            variant={state.cam ? "ghost" : "danger"}
+            className={`size-12 text-white ${state.cam ? "bg-white/15" : ""}`}
+            aria-label={state.cam ? "Turn camera off" : "Turn camera on"}
+            aria-pressed={state.cam}
+            onPress={() => onToggle({ cam: !state.cam })}
+          >
+            {state.cam ? <Video size={18} /> : <VideoOff size={18} />}
+          </Button>
+        </Tip>
         <DeviceMenu
           label="Choose camera"
           sections={[{ title: "Camera", kind: "video", devices: devices.filter((d) => d.kind === "videoinput"), activeId: camId }]}
@@ -272,49 +279,57 @@ export default function Toolbar({
         />
       </ButtonGroup>
       {shareSupported ? (
-        <Button
-          isIconOnly
-          variant="ghost"
-          className={`size-12 ${sharing ? "bg-white text-black" : "bg-white/15 text-white"}`}
-          aria-label={sharing ? "Stop sharing" : "Share screen"}
-          aria-pressed={sharing}
-          onPress={onShare}
-        >
-          <MonitorUp size={18} />
-        </Button>
-      ) : null}
-      {record && button ? (
-        <RecordPopover open={record.open} onOpenChange={record.onOpenChange} onStart={record.onStart}>
-          <RecordButton {...button} />
-        </RecordPopover>
-      ) : null}
-      <Button
-        isIconOnly
-        variant="ghost"
-        className="relative size-12 bg-white/15 text-white"
-        aria-label={`Participants${waitingCount > 0 ? `, ${waitingCount} waiting` : ""}`}
-        onPress={onParticipants}
-      >
-        <Users size={18} />
-        {canAdmit && waitingCount > 0 ? (
-          <span aria-hidden className="absolute -right-1 -top-1 rounded-full bg-danger px-1.5 text-xs text-white">
-            {waitingCount}
-          </span>
-        ) : null}
-      </Button>
-      {leaveButton}
-      {isHost ? (
-        <>
+        <Tip label={sharing ? "Stop sharing" : "Share screen"}>
           <Button
             isIconOnly
             variant="ghost"
-            className={`size-12 ${locked ? "bg-white text-black" : "bg-white/15 text-white"}`}
-            aria-label={locked ? "Unlock room" : "Lock room"}
-            aria-pressed={locked}
-            onPress={() => onLock(!locked)}
+            className={`size-12 ${sharing ? "bg-white text-black" : "bg-white/15 text-white"}`}
+            aria-label={sharing ? "Stop sharing" : "Share screen"}
+            aria-pressed={sharing}
+            onPress={onShare}
           >
-            {locked ? <Lock size={18} /> : <LockOpen size={18} />}
+            <MonitorUp size={18} />
           </Button>
+        </Tip>
+      ) : null}
+      {record && button ? (
+        <RecordPopover open={record.open} onOpenChange={record.onOpenChange} onStart={record.onStart}>
+          <Tip label={button.startedAt !== null ? "Stop recording" : button.saving ? "Saving recording" : "Record"}>
+            <RecordButton {...button} />
+          </Tip>
+        </RecordPopover>
+      ) : null}
+      <Tip label={waitingCount > 0 && canAdmit ? `Participants · ${waitingCount} waiting` : "Participants"}>
+        <Button
+          isIconOnly
+          variant="ghost"
+          className="relative size-12 bg-white/15 text-white"
+          aria-label={`Participants${waitingCount > 0 ? `, ${waitingCount} waiting` : ""}`}
+          onPress={onParticipants}
+        >
+          <Users size={18} />
+          {canAdmit && waitingCount > 0 ? (
+            <span aria-hidden className="absolute -right-1 -top-1 rounded-full bg-danger px-1.5 text-xs text-white">
+              {waitingCount}
+            </span>
+          ) : null}
+        </Button>
+      </Tip>
+      {leaveButton}
+      {isHost ? (
+        <>
+          <Tip label={locked ? "Unlock room" : "Lock room"}>
+            <Button
+              isIconOnly
+              variant="ghost"
+              className={`size-12 ${locked ? "bg-white text-black" : "bg-white/15 text-white"}`}
+              aria-label={locked ? "Unlock room" : "Lock room"}
+              aria-pressed={locked}
+              onPress={() => onLock(!locked)}
+            >
+              {locked ? <Lock size={18} /> : <LockOpen size={18} />}
+            </Button>
+          </Tip>
           {endDialog}
         </>
       ) : null}

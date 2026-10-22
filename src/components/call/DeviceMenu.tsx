@@ -11,6 +11,7 @@ import {
 } from "@heroui/react";
 import { Check, ChevronUp } from "lucide-react";
 import type { DeviceInfo } from "@/lib/webrtc/devices";
+import Tip from "@/components/ui/Tip";
 
 export type DeviceKind = "audio" | "video" | "speaker";
 export type DeviceSection = { title: string; kind: DeviceKind; devices: DeviceInfo[]; activeId: string | null };
@@ -27,10 +28,12 @@ export default function DeviceMenu({
 }) {
   return (
     <DropdownRoot>
-      <Button isIconOnly variant="ghost" className="h-12 w-9 min-w-0 bg-white/15 text-white" aria-label={label}>
-        <ButtonGroup.Separator />
-        <ChevronUp size={16} />
-      </Button>
+      <Tip label={label}>
+        <Button isIconOnly variant="ghost" className="h-12 w-9 min-w-0 bg-white/15 text-white" aria-label={label}>
+          <ButtonGroup.Separator />
+          <ChevronUp size={16} />
+        </Button>
+      </Tip>
       <DropdownPopover>
         <DropdownMenu
           onAction={(key) => {

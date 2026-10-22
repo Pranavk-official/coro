@@ -68,3 +68,36 @@ test("E18 sign-out from header lands on / with rooms hidden", async ({ browser }
   await expect(page.getByRole("heading", { name: "Your rooms" })).toHaveCount(0);
   await ctx.close();
 });
+
+test("E49 @regression desktop toolbar: every control shows a tooltip; menus still open", async ({ browser }) => {
+  const { ctx, page } = await asRole(browser, "host");
+  const room = await createRoomAs(ctx.request, { name: "E49", kind: "instant" });
+  await enterCall(page, room.code);
+  const tip = page.getByRole("tooltip");
+  for (const [button, text] of [
+    ["Mute microphone", "Mute microphone"],
+    ["Choose microphone", "Choose microphone"],
+    ["Turn camera off", "Turn camera off"],
+    ["Choose camera", "Choose camera"],
+    ["Share screen", "Share screen"],
+    ["Record", "Record"],
+    ["Participants", "Participants"],
+    ["Leave options", "Leave or end for everyone"],
+    ["Lock room", "Lock room"],
+  ]) {
+    await page.getByRole("button", { name: button, exact: true }).hover();
+    await expect(tip).toHaveText(text);
+    await page.mouse.move(0, 0);
+    await expect(tip).toHaveCount(0);
+  }
+  // Wrapping must not swallow the triggers' own menus.
+  await page.getByRole("button", { name: "Choose camera" }).click();
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Leave options" }).click();
+  await expect(page.getByRole("menuitem", { name: "End for everyone" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Record", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Record this call" })).toBeVisible();
+  await ctx.close();
+});
