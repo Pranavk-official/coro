@@ -62,6 +62,11 @@ specs/
 # graphify
 graphify-out/
 
+# mobile app (spec 008): deps; Android/iOS build output is ignored by the generated mobile/android|ios/.gitignore
+/mobile/node_modules/
+# Gradle cache (also left behind on branches without mobile/android/.gitignore)
+.gradle/
+
 # playwright
 /test-results/
 /playwright-report/
