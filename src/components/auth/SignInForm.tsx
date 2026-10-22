@@ -154,6 +154,17 @@ export default function SignInForm({ shell: Frame = AuthShell }: { shell?: Shell
           </button>
         )}
       </div>
+      <p className="text-xs text-muted">
+        By continuing you agree to the{" "}
+        <Link href="/terms" className="underline">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline">
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </Frame>
   );
 }

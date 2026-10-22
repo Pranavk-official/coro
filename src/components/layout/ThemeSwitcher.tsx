@@ -52,10 +52,13 @@ export default function ThemeSwitcher({ collapsed = false }: { collapsed?: boole
   return collapsed ? <div className="theme-dock glass flex rounded-full">{rail}</div> : rail;
 }
 
-/** Floating top-right badge on every page except home (home has it in the header). */
+/** Pages that render AppHeader, which already carries the theme rail. */
+const WITH_HEADER = new Set(["/", "/profile", "/privacy", "/terms"]);
+
+/** Floating top-right badge on every page without the app header. */
 export function ThemeBadge() {
   const path = usePathname();
-  if (path === "/") return null;
+  if (WITH_HEADER.has(path)) return null;
   return (
     <div className="fixed right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-50">
       <ThemeSwitcher collapsed />

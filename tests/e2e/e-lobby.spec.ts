@@ -106,3 +106,64 @@ test("E23b @uat link for later has no modal and no time", async ({ page }) => {
   await page.getByRole("menuitem", { name: /Create a meeting link for later/ }).click();
   await expect(page.getByRole("dialog", { name: "Your meeting's ready" })).toBeVisible({ timeout: 15000 });
 });
+
+/** Tomorrow's day-of-month cell in the visible calendar (a 1st-of-month tomorrow is in the next page: skip that rare case). */
+const tomorrow = () => {
+  const d = new Date(Date.now() + 86_400_000);
+  return { day: d.getDate(), sameMonth: d.getMonth() === new Date().getMonth() };
+};
+const endsHoursFromNow = async (page: import("@playwright/test").Page) => {
+  await expect(page).toHaveURL(/\/rooms\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/, { timeout: 15000 });
+  const code = new URL(page.url()).pathname.split("/").pop()!;
+  const room = await (await page.request.get(`/api/rooms/${code}`)).json();
+  return (new Date(room.expiresAt).getTime() - Date.now()) / 3_600_000;
+};
+
+test("E57 @regression desktop custom end time: HeroUI date picker (calendar + time), applied on Join now", async ({ page }) => {
+  const t = tomorrow();
+  test.skip(!t.sameMonth, "tomorrow is next month");
+  await page.goto("/new");
+  await expect(page.getByText("Ready to join?", { exact: true })).toBeVisible({ timeout: 15000 });
+  await page.getByRole("button", { name: /Meeting length/ }).click();
+  await page.getByRole("option", { name: "Custom end time" }).click();
+  await expect(page.getByRole("spinbutton", { name: "month, Custom end time" })).toBeVisible(); // HeroUI DateField, not a native input
+  await page.getByRole("button", { name: "Calendar Custom end time" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: new RegExp(`\\b${t.day}\\b`) }).first().click();
+  await expect(page.getByRole("dialog").getByText("Time", { exact: true })).toBeVisible(); // popover stays open for the time
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("spinbutton", { name: "day, Custom end time" })).toHaveText(String(t.day).padStart(2, "0"));
+  await expect(page.getByRole("spinbutton", { name: "minute, Custom end time" })).toHaveText("00"); // next full hour, not midnight
+  await expect(page.getByRole("spinbutton", { name: "hour, Custom end time" })).not.toHaveText("––");
+  await page.getByRole("button", { name: "Join now" }).click();
+  const hours = await endsHoursFromNow(page);
+  expect(hours).toBeGreaterThan(0);
+  expect(hours).toBeLessThan(48);
+});
+
+test("E58 @regression phone /new: Join with + Meeting length open bottom drawers; custom time picked inline", async ({ browser }) => {
+  const t = tomorrow();
+  test.skip(!t.sameMonth, "tomorrow is next month");
+  const ctx = await browser.newContext({ storageState: HOST, viewport: { width: 375, height: 740 } });
+  const page = await ctx.newPage();
+  await page.goto("/new");
+  await expect(page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 15000 });
+
+  await page.getByRole("button", { name: /^Join with:/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Audio only (turn video on anytime)" }).click();
+  await expect(page.getByRole("button", { name: /^Join with: Audio only/ })).toBeVisible();
+
+  await page.getByRole("button", { name: /^Meeting length: 1 hr/ }).click();
+  await page.getByRole("dialog", { name: "Meeting length" }).getByRole("button", { name: "Custom end time" }).click();
+  const stacked = page.getByRole("dialog", { name: "Custom end time" }); // nested drawer on top of the list
+  await stacked.getByRole("grid").getByRole("button", { name: new RegExp(`\\b${t.day}\\b`) }).first().click();
+  await stacked.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0); // Done closes both
+  await expect(page.getByRole("button", { name: /^Meeting length: Until / })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.getByRole("button", { name: "Join now" }).click();
+  const hours = await endsHoursFromNow(page);
+  expect(hours).toBeGreaterThan(12);
+  expect(hours).toBeLessThan(48);
+  await ctx.close();
+});

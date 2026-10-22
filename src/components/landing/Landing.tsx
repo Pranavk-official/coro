@@ -59,14 +59,28 @@ const PEEK: [LucideIcon, string, number][] = [
   [ShieldCheck, "bg-[#5b6cff]", -4],
 ];
 
-function PeekTiles({ className = "" }: { className?: string }) {
+/**
+ * `rise`: hero version. On hover-capable screens the tiles rest tucked behind the product shot and spring up,
+ * fanned, when the pointer is over it (`group/shot`), like uploadthing. Touch screens keep them peeking.
+ */
+function PeekTiles({ className = "", rise = false }: { className?: string; rise?: boolean }) {
   return (
     <div aria-hidden className={`flex justify-center gap-2 sm:gap-4 ${className}`}>
       {PEEK.map(([Icon, bg, rot], i) => (
         <span
           key={i}
-          style={{ rotate: `${rot}deg`, translate: `0 ${i % 2 ? 10 : 0}px` }}
-          className={`flex size-12 items-center justify-center rounded-2xl text-white shadow-lg sm:size-20 sm:rounded-3xl ${bg} ${i > 4 ? "max-sm:hidden" : ""}`}
+          style={
+            {
+              "--r": `${rot}deg`,
+              "--y": `${i % 2 ? 10 : 0}px`,
+              transitionDelay: `${Math.abs(i - 3) * 40}ms`,
+            } as React.CSSProperties
+          }
+          className={`flex size-12 items-center justify-center rounded-2xl text-white shadow-lg [rotate:var(--r)] [translate:0_var(--y)] sm:size-20 sm:rounded-3xl ${bg} ${i > 4 ? "max-sm:hidden" : ""} ${
+            rise
+              ? "transition-[translate,rotate] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none [@media(hover:hover)]:[translate:0_calc(var(--y)+55%)] [@media(hover:hover)]:group-hover/shot:[rotate:calc(var(--r)*1.6)] [@media(hover:hover)]:group-hover/shot:[translate:0_calc(var(--y)-38%)]"
+              : ""
+          }`}
         >
           <Icon className="size-6 sm:size-9" strokeWidth={2.2} />
         </span>
@@ -148,14 +162,14 @@ function Hero() {
           nothing to pay.
         </p>
         <div id="join" className="flex w-full max-w-xl scroll-mt-28 flex-col items-stretch gap-3 text-left sm:flex-row sm:items-start">
-          <div className="sm:mt-[26px]">
+          <div className="flex justify-center sm:mt-[26px] sm:block">
             <StartCta />
           </div>
           <MeetingInput />
         </div>
       </div>
-      <div className="relative mx-auto mt-20 w-full max-w-4xl sm:mt-28">
-        <PeekTiles className="absolute inset-x-0 -top-9 sm:-top-14" />
+      <div className="group/shot relative mx-auto mt-20 w-full max-w-4xl sm:mt-28">
+        <PeekTiles rise className="absolute inset-x-0 -top-9 sm:-top-14" />
         <ProductShot />
       </div>
     </section>
@@ -173,7 +187,7 @@ const PANELS: { tab: string; lines: Line[] }[] = [
       ["Send it anywhere: chat, mail, calendar"],
       ["Someone knocks → Admit or Deny", "accent"],
       ["Lock the room once everyone's in"],
-      ["Record → saved to your device", "accent"],
+      ["Record → your device, or your Google Drive", "accent"],
       ["Mute, remove, or end for all", "muted"],
     ],
   },
@@ -205,8 +219,8 @@ function HowItWorks() {
           <span className="text-accent">privacy and simplicity.</span>
         </h2>
         <p className="max-w-xl text-[17px] text-foreground/80">
-          You choose who gets in. Video goes straight between browsers, and recordings save to your own device, never
-          our servers.
+          You choose who gets in. Video goes straight between browsers, and recordings save to your device or your own
+          Google Drive, never our servers.
         </p>
       </div>
       <div className="mx-auto mt-12 grid max-w-5xl gap-4 md:grid-cols-[1.25fr_1fr]">
@@ -252,7 +266,7 @@ const PLANS = [
     name: "Guest",
     blurb: "For anyone you invite.",
     price: "$0",
-    features: ["Join from a link or code", "No account needed", "Works on phones and laptops"],
+    features: ["Join from a link or code", "No account needed", "Works on phones and laptops", "A mascot stands in when your camera is off"],
     cta: (
       <Button variant="secondary" className="w-full" onPress={() => document.getElementById("join")?.scrollIntoView({ behavior: "smooth" })}>
         Join with a code
@@ -265,10 +279,10 @@ const PLANS = [
     price: "$0",
     featured: true,
     features: [
-      "Instant, later or scheduled",
-      "Waiting room and password",
-      "Screen share and pinning",
-      "Record to your device, WebM or MP4",
+      "Instant, later or scheduled, straight to your calendar",
+      "Waiting room, password and room lock",
+      "Screen share with tab audio, and pinning",
+      "Record everyone to your device, plus Google Drive",
       "Up to 10 people per room",
     ],
     cta: <StartCta />,
@@ -333,9 +347,10 @@ const FAQ = [
   ["Can I schedule ahead?", "Yes: pick a time, get a link, add it to your calendar."],
   [
     "Can I record a call?",
-    "Yes, once you're signed in. One tap records everyone's video and audio, plus any screen share, and saves it to your device as WebM or MP4. Everyone in the room sees a REC badge while you record.",
+    "Yes, once you're signed in. One tap records everyone's video and audio, plus any screen share, and saves it to your device as WebM or MP4. Connect Google Drive on your profile and a copy lands there too. Everyone in the room sees a REC badge while you record.",
   ],
   ["What do I need?", "A recent browser, a camera and a mic. You choose devices before you join."],
+  ["Can I delete my account?", "Yes, from your profile. We email you a link to confirm, then your account and rooms are gone."],
 ];
 
 function Faq() {
@@ -366,10 +381,12 @@ function Footer() {
     <footer className="px-4 pb-4 pt-12 sm:px-6">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 border-t border-hairline px-2 py-6 text-[14px] text-muted">
         <span>© {new Date().getFullYear()} Coro. Many voices, one room.</span>
-        <span className="flex gap-6">
+        <span className="flex flex-wrap gap-x-6 gap-y-2">
           <a href="#how" className="hover:text-foreground">How it works</a>
           <a href="#pricing" className="hover:text-foreground">Pricing</a>
           <a href="#faq" className="hover:text-foreground">FAQ</a>
+          <a href="/privacy" className="hover:text-foreground">Privacy</a>
+          <a href="/terms" className="hover:text-foreground">Terms</a>
           <span className="flex items-center gap-1">
             <Lock size={13} aria-hidden /> Peer-to-peer
           </span>

@@ -17,7 +17,7 @@ import {
 import { Check, Crown, MicOff, MonitorUp, MonitorX, UserX, X } from "lucide-react";
 import type { Peer } from "@/lib/socket.io/events";
 import type { RemotePeer } from "@/hooks/use-call";
-import { initials } from "@/components/call/VideoTile";
+import { initials } from "@/lib/utils/initials";
 import { Drawer as Sheet, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 type Props = {
@@ -36,7 +36,7 @@ type Props = {
   onStopShare: (id: string) => void;
 };
 
-const icon = "size-9 min-w-0 text-white/80 hover:text-white";
+const icon = "size-9 min-w-0 text-foreground/80 hover:text-foreground";
 
 function Person({
   name,
@@ -52,7 +52,7 @@ function Person({
   children?: React.ReactNode;
 }) {
   return (
-    <li className="flex min-h-14 items-center gap-3 rounded-2xl px-2 hover:bg-white/5">
+    <li className="flex min-h-14 items-center gap-3 rounded-2xl px-2 hover:bg-foreground/5">
       <Avatar size="sm">
         <AvatarImage src={image ?? undefined} />
         <AvatarFallback>{initials(name)}</AvatarFallback>
@@ -125,7 +125,7 @@ function ParticipantsBody(p: Omit<Props, "state">) {
                 .filter(Boolean)
                 .join(" · ")}
             >
-              {info.state.screen && !p.isHost ? <MonitorUp size={16} className="mx-2 text-white/70" aria-label="Presenting" /> : null}
+              {info.state.screen && !p.isHost ? <MonitorUp size={16} className="mx-2 text-muted" aria-label="Presenting" /> : null}
               {p.isHost ? (
                 <>
                   {info.state.screen ? (
@@ -149,7 +149,7 @@ function ParticipantsBody(p: Omit<Props, "state">) {
                   </Button>
                 </>
               ) : !info.state.mic ? (
-                <MicOff size={16} className="mx-2 text-white/70" aria-label="Muted" />
+                <MicOff size={16} className="mx-2 text-muted" aria-label="Muted" />
               ) : null}
             </Person>
           ))}

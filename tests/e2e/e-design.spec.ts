@@ -25,7 +25,7 @@ test("V2 V3 @regression 375px: no horizontal scroll, call + pre-join actions ≥
   const room = await createRoomAs(ctx.request, { name: "V3", kind: "instant" });
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Video calls." })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { name: /Start a call/ })).toBeVisible({ timeout: 10_000 });
   expect(await noHScroll(page)).toBe(true);
 
   await page.goto(`/rooms/${room.code}`);

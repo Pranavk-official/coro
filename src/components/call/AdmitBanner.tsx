@@ -24,7 +24,7 @@ export default function AdmitBanner({
         aria-live="polite"
         className="glass absolute left-1/2 top-[calc(env(safe-area-inset-top)+4rem)] z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-full py-1.5 pl-4 pr-1.5"
       >
-        <span className="min-w-0 truncate text-sm text-white">{w.name} wants to join</span>
+        <span className="min-w-0 truncate text-sm text-foreground">{w.name} wants to join</span>
         <Button size="sm" variant="ghost" onPress={() => onDeny(w.id)}>
           Deny
         </Button>
@@ -40,7 +40,7 @@ export default function AdmitBanner({
       aria-live="polite"
       className="glass absolute left-1/2 top-[calc(env(safe-area-inset-top)+4rem)] z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-full py-1.5 pl-4 pr-1.5"
     >
-      <span className="min-w-0 truncate text-sm text-white">{waiting.length} people want to join</span>
+      <span className="min-w-0 truncate text-sm text-foreground">{waiting.length} people want to join</span>
       <Button size="sm" variant="ghost" onPress={onView}>
         View
       </Button>

@@ -38,6 +38,14 @@ export const resetPassword = (url: string) =>
     url,
   );
 
+export const deleteAccount = (url: string) =>
+  build(
+    "Confirm deleting your Coro account",
+    "Open this link to permanently delete your Coro account, your meetings and your sign-in methods. It expires in 1 hour. Recordings on your device or Google Drive aren't touched. If you didn't ask for this, ignore this email — nothing changes.",
+    "Delete my account",
+    url,
+  );
+
 export const accountExists = (url: string) =>
   build(
     "You already have a Coro account",

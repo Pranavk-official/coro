@@ -161,7 +161,7 @@ export default function RoomList() {
 
   if (!rooms || rooms.length === 0) {
     return (
-      <p className="rounded-card border border-dashed border-hairline p-6 text-center text-muted">
+      <p className="rounded-[22px] border border-dashed border-hairline bg-surface/60 p-8 text-center text-muted">
         No rooms yet — start an instant meeting or schedule one.
       </p>
     );

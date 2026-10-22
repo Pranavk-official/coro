@@ -52,7 +52,8 @@ export async function joinAsGuest(page: Page, code: string, name: string): Promi
 /** Open the room, pass pre-join, wait for the call toolbar. */
 export async function enterCall(page: Page, code: string): Promise<void> {
   await page.goto(`/rooms/${code}`);
-  await expect(page.getByText("Ready to join?", { exact: true })).toBeVisible({ timeout: 15000 });
+  // Not "Ready to join?": on phones that line turns into the who's-here status once presence loads.
+  await expect(page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 15000 });
   await page.getByRole("button", { name: "Join now" }).click();
   await expect(leaveButton(page)).toBeVisible({ timeout: 15000 });
 }

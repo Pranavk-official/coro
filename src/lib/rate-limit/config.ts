@@ -19,6 +19,7 @@ export const LIMITS = {
   "auth:reset:email": { max: 3, windowSec: HOUR },
   "auth:reset:apply": { max: 10, windowSec: HOUR },
   "auth:verify-email": { max: 3, windowSec: HOUR },
+  "auth:delete": { max: 3, windowSec: HOUR },
   "mail:daily": { max: 500, windowSec: 24 * HOUR },
   "rooms:create": { max: 20, windowSec: HOUR },
   "rooms:verify": { max: 5, windowSec: 5 * MIN, failClosed: true },

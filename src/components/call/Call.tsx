@@ -76,17 +76,6 @@ export default function Call({
   const roomInfo = useRoom(code);
   const endRoom = useEndRoom();
 
-  // The call is always dark (video is the hero); menus/drawers portal to <body> and read the theme from <html>.
-  useEffect(() => {
-    const el = document.documentElement;
-    const wasDark = el.classList.contains("dark");
-    el.classList.add("dark");
-    el.classList.remove("light");
-    return () => {
-      if (!wasDark) el.classList.replace("dark", "light");
-    };
-  }, []);
-
   function copyLink() {
     return navigator.clipboard
       .writeText(`${window.location.origin}/rooms/${code}`)
@@ -375,7 +364,7 @@ export default function Call({
       "function";
 
   return (
-    <main ref={callRef} className="dark fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
+    <main ref={callRef} className="fixed inset-0 flex flex-col overflow-hidden bg-background text-foreground">
       {call.canAdmit ? (
         <AdmitBanner
           waiting={call.waiting}

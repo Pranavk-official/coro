@@ -6,30 +6,31 @@ import NewMeetingMenu from "@/components/lobby/NewMeetingMenu";
 import MeetingInput from "@/components/lobby/MeetingInput";
 import RoomList from "@/components/lobby/RoomList";
 import Landing from "@/components/landing/Landing";
+import PageIntro, { PageBackdrop } from "@/components/layout/PageIntro";
 
-function Hero({ children }: { children: React.ReactNode }) {
+function Lobby({ name }: { name: string }) {
+  const first = name.trim().split(/\s+/)[0];
   return (
-    <section className="flex flex-col items-center gap-3 px-4 pb-8 pt-28 text-center sm:pt-36">
-      <h1 className="text-[34px] leading-[1.07] font-semibold tracking-[-0.02em] sm:text-[56px]">Video calls.</h1>
-      <p className="max-w-md text-[21px] leading-[1.19] text-muted sm:text-[28px] sm:leading-[1.14]">
-        Simple, private, instant.
-      </p>
-      {children}
-    </section>
-  );
-}
-
-function Lobby() {
-  return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
-      <Hero>
-        <div className="mt-4 flex w-full max-w-xl flex-col items-stretch gap-3 text-left sm:flex-row sm:items-start">
+    <main className="relative isolate flex flex-1 flex-col overflow-hidden">
+      <PageBackdrop />
+      <section className="mx-auto flex w-full max-w-5xl flex-col items-center gap-8 px-4 pb-14 pt-28 sm:px-6 sm:pt-36">
+        <PageIntro
+          pill={first ? <>Signed in as {first}</> : "Welcome back"}
+          title="Start a call,"
+          accent="or join one."
+        >
+          One link for everyone. You decide who gets in.
+        </PageIntro>
+        <div className="flex w-full max-w-xl flex-col items-stretch gap-3 text-left sm:flex-row sm:items-start">
           <NewMeetingMenu />
           <MeetingInput />
         </div>
-      </Hero>
-      <section className="flex flex-col gap-3 px-4 pb-12 sm:px-6">
-        <h2 className="text-[21px] font-semibold">Your rooms</h2>
+      </section>
+      <section className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-16 sm:px-6">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="text-[26px] font-bold tracking-[-0.03em] sm:text-[34px]">Your rooms</h2>
+          <span className="hidden text-[15px] text-muted sm:block">Expired rooms clear themselves.</span>
+        </div>
         <RoomList />
       </section>
     </main>
@@ -50,7 +51,7 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <Suspense>{!ready ? null : session?.user && !guest ? <Lobby /> : <Landing />}</Suspense>
+      <Suspense>{!ready ? null : session?.user && !guest ? <Lobby name={session.user.name ?? ""} /> : <Landing />}</Suspense>
     </div>
   );
 }

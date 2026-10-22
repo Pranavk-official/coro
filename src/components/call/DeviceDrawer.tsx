@@ -6,7 +6,7 @@ import type { DeviceKind, DeviceSection } from "@/components/call/DeviceMenu";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 const ICON = { audio: Mic, speaker: Volume2, video: Video } as const;
-const row = "flex min-h-14 w-full items-center gap-4 rounded-2xl px-4 text-left hover:bg-white/10";
+const row = "flex min-h-14 w-full items-center gap-4 rounded-2xl px-4 text-left hover:bg-foreground/10";
 const list = "flex flex-col gap-1 overflow-y-auto p-2 pb-[max(env(safe-area-inset-bottom),1rem)]";
 
 /** The device that is actually in use: the saved one, else the browser default, else the first listed. */

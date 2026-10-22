@@ -29,7 +29,7 @@ export default function DeviceMenu({
   return (
     <DropdownRoot>
       <Tip label={label}>
-        <Button isIconOnly variant="ghost" className="h-12 w-9 min-w-0 bg-white/15 text-white" aria-label={label}>
+        <Button isIconOnly variant="ghost" className="h-12 w-9 min-w-0 bg-foreground/10 text-foreground" aria-label={label}>
           <ButtonGroup.Separator />
           <ChevronUp size={16} />
         </Button>

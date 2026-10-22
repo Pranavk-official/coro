@@ -49,6 +49,8 @@ export function authErrorCopy(err: unknown): string {
     case "INVALID_TOKEN":
     case "EXPIRED_TOKEN":
       return "This link has expired or was already used.";
+    case "FAILED_TO_GET_USER_INFO":
+      return "Sign in first, in the same browser, then open the link again.";
     default:
       return "Something went wrong. Try again.";
   }
@@ -111,4 +113,16 @@ export const useRequestReset = () =>
 export const useResetPassword = () =>
   useMutation({
     mutationFn: (v: { token: string; newPassword: string }) => unwrap((fetchOptions) => authClient.resetPassword({ ...v, fetchOptions })),
+  });
+
+/** Emails a delete-account link (better-auth `deleteUser` with verification); nothing is deleted yet. */
+export const useRequestAccountDelete = () =>
+  useMutation({
+    mutationFn: () => unwrap((fetchOptions) => authClient.deleteUser({ fetchOptions })),
+  });
+
+/** Spends the emailed token: deletes the signed-in user, their sessions and linked accounts. */
+export const useConfirmAccountDelete = () =>
+  useMutation({
+    mutationFn: (token: string) => unwrap((fetchOptions) => authClient.deleteUser({ token, fetchOptions })),
   });

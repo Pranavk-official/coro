@@ -5,6 +5,7 @@ import { Button, useOverlayState } from "@heroui/react";
 import DeviceDrawer from "@/components/call/DeviceDrawer";
 import MeetingLength, { type LengthValue } from "@/components/call/MeetingLength";
 import SelectField from "@/components/ui/SelectField";
+import OptionSheet from "@/components/ui/OptionSheet";
 import { usePresence } from "@/hooks/use-presence";
 import { presenceLabel } from "@/lib/utils/presence";
 import TextInput from "@/components/ui/TextInput";
@@ -321,13 +322,23 @@ export default function PreJoin({
           {askToJoin ? "Ask to join" : "Join now"}
         </Button>
         <div className="flex w-full flex-col gap-3 text-left">
-          <SelectField
-            label="Join with"
-            value={mode}
-            options={JOIN_MODES.filter((m) => m.id !== "share" || canShare)}
-            onChange={(id) => pickMode(id as JoinMode)}
-          />
-          {length ? <MeetingLength value={length.value} onChange={length.onChange} /> : null}
+          {/* Phones pick from bottom drawers (like the device sheet); desktop keeps dropdowns. */}
+          {phone ? (
+            <OptionSheet
+              label="Join with"
+              value={mode}
+              options={JOIN_MODES.filter((m) => m.id !== "share" || canShare)}
+              onChange={(id) => pickMode(id as JoinMode)}
+            />
+          ) : (
+            <SelectField
+              label="Join with"
+              value={mode}
+              options={JOIN_MODES.filter((m) => m.id !== "share" || canShare)}
+              onChange={(id) => pickMode(id as JoinMode)}
+            />
+          )}
+          {length ? <MeetingLength value={length.value} onChange={length.onChange} phone={phone} /> : null}
         </div>
         {isGuest ? (
           <Button variant="secondary" className="w-full" onPress={onSignIn}>

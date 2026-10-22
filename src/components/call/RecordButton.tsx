@@ -43,7 +43,7 @@ export default function RecordButton({
     <Button
       isIconOnly
       variant="ghost"
-      className="size-12 bg-white/15 text-white"
+      className="size-12 bg-foreground/10 text-foreground"
       aria-label={saving ? "Saving recording" : "Record"}
       aria-pressed={false}
       isPending={saving}

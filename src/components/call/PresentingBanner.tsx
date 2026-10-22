@@ -23,7 +23,7 @@ export default function PresentingBanner({
   }, [stream]);
   const controls = (
     <>
-      <p className="text-sm font-semibold text-white" role="status">
+      <p className="text-sm font-semibold text-foreground" role="status">
         You are presenting
       </p>
       <Button variant="danger" className="h-11" onPress={onStop}>

@@ -7,6 +7,7 @@ export type Prefs = {
   guestName: string;
   recFormat: "webm" | "mp4";
   recCompressed: boolean;
+  recDrive: boolean;
 };
 
 const DEFAULTS: Prefs = {
@@ -18,6 +19,7 @@ const DEFAULTS: Prefs = {
   guestName: "",
   recFormat: "webm",
   recCompressed: false,
+  recDrive: false,
 };
 
 const KEY = "vc-demo.prefs.v1";
@@ -45,6 +47,7 @@ export function getPrefs(): Prefs {
     guestName: typeof stored.guestName === "string" ? stored.guestName : "",
     recFormat: stored.recFormat === "mp4" ? "mp4" : DEFAULTS.recFormat,
     recCompressed: typeof stored.recCompressed === "boolean" ? stored.recCompressed : DEFAULTS.recCompressed,
+    recDrive: typeof stored.recDrive === "boolean" ? stored.recDrive : DEFAULTS.recDrive,
   };
 }
 

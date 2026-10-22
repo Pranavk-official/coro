@@ -8,6 +8,7 @@ import { layoutTiles, tileId, type TileKey } from "@/lib/webrtc/screen";
 import PresentingBanner from "@/components/call/PresentingBanner";
 import { setSpeaker } from "@/lib/webrtc/devices";
 import { getPrefs } from "@/lib/utils/prefs";
+import { initials } from "@/lib/utils/initials";
 
 /** Speaking highlight: its own top layer, so the avatar overlay can't paint over it. Render it last. */
 export function SpeakingRing() {
@@ -31,14 +32,6 @@ export function LocalPreview({ stream, mirrored = true }: { stream: MediaStream 
   );
 }
 
-export function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 // Sprite sheets in public/mascots (page-mascot); one per person, picked from a stable seed.
 const MASCOTS = ["fox", "bunny", "cat", "panda", "owl", "otter", "koala", "penguin"];
@@ -149,17 +142,17 @@ export default function VideoTile({
       />
       {camOff ? <PersonAvatar seed={info.userId} name={info.name} image={info.image} size={compact ? 72 : 140} /> : null}
       <div className="absolute bottom-2 left-2 flex items-center gap-1">
-        <span className="glass rounded-full px-2.5 py-1 text-sm font-semibold text-white">
+        <span className="glass rounded-full px-2.5 py-1 text-sm font-semibold text-foreground">
           {info.name}
         </span>
         {info.isHost && <Crown size={14} className="text-warning" aria-label="Host" />}
         {info.isGuest && (
-          <Chip size="sm" className="glass text-white">
+          <Chip size="sm" className="glass text-foreground">
             guest
           </Chip>
         )}
         {pinned && (
-          <Chip size="sm" className="glass text-white">
+          <Chip size="sm" className="glass text-foreground">
             pinned
           </Chip>
         )}
@@ -215,14 +208,14 @@ export function ScreenTile({
           className="h-full w-full object-contain"
         />
       ) : (
-        <div className="flex h-full items-center justify-center text-sm text-white/70">Loading presentation…</div>
+        <div className="flex h-full items-center justify-center text-sm text-muted">Loading presentation…</div>
       )}
       <div className="absolute bottom-2 left-2 flex items-center gap-1">
-        <span className="glass flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold text-white">
+        <span className="glass flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold text-foreground">
           <MonitorUp size={14} aria-hidden /> {name} is presenting
         </span>
         {pinned && (
-          <Chip size="sm" className="glass text-white">
+          <Chip size="sm" className="glass text-foreground">
             pinned
           </Chip>
         )}

@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertDialog,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Button,
   Drawer,
   DrawerBackdrop,
@@ -21,13 +24,14 @@ import SignInModal from "@/components/auth/SignInModal";
 import ThemeSwitcher from "@/components/layout/ThemeSwitcher";
 import BrandMark from "@/components/layout/BrandMark";
 import { notify } from "@/lib/toast";
+import { initials } from "@/lib/utils/initials";
 import { glassBackdrop, glassContainer, glassDialog } from "@/components/ui/glass-overlay";
 
 // Landing sections (signed-out only).
 const LINKS = [
-  ["How it works", "#how"],
-  ["Pricing", "#pricing"],
-  ["FAQ", "#faq"],
+  ["How it works", "/#how"],
+  ["Pricing", "/#pricing"],
+  ["FAQ", "/#faq"],
 ] as const;
 
 const Logo = () => (
@@ -109,6 +113,14 @@ export default function AppHeader() {
           <div className="md:hidden">
             <ThemeSwitcher collapsed />
           </div>
+          {session?.user && !(session.user as { isAnonymous?: boolean }).isAnonymous ? (
+            <Link href="/profile" aria-label="Profile" className="rounded-full">
+              <Avatar size="sm">
+                {session.user.image ? <AvatarImage src={session.user.image} /> : null}
+                <AvatarFallback>{initials(session.user.name || session.user.email)}</AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : null}
           {(!isPending || isRefetching) &&
             (session?.user ? (
               <AlertDialog>

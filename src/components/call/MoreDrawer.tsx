@@ -47,32 +47,32 @@ export default function MoreDrawer({
     state.close();
     fn();
   };
-  const tile = "h-20 w-full flex-col gap-1 rounded-3xl bg-white/10";
+  const tile = "h-20 w-full flex-col gap-1 rounded-3xl bg-foreground/10";
   return (
     <Drawer open={state.isOpen} onOpenChange={state.setOpen}>
       <DrawerContent className="glass">
         <DrawerTitle className="sr-only">More options</DrawerTitle>
         <div className="flex flex-col gap-3 overflow-y-auto p-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="ghost" className={`${tile} col-span-2 text-white`} onPress={onDevices}>
+            <Button variant="ghost" className={`${tile} col-span-2 text-foreground`} onPress={onDevices}>
               <Settings2 size={20} /> Audio & video
             </Button>
             {shareSupported ? (
-              <Button variant="ghost" className={`${tile} text-white`} onPress={run(onShare)}>
+              <Button variant="ghost" className={`${tile} text-foreground`} onPress={run(onShare)}>
                 <MonitorUp size={20} /> {sharing ? "Stop sharing" : "Share screen"}
               </Button>
             ) : null}
-            <Button variant="ghost" className={`${tile} text-white ${shareSupported ? "" : "col-span-2"}`} onPress={onParticipants}>
+            <Button variant="ghost" className={`${tile} text-foreground ${shareSupported ? "" : "col-span-2"}`} onPress={onParticipants}>
               <Users size={20} /> {waitingCount > 0 ? `Participants (${waitingCount} waiting)` : "Participants"}
             </Button>
             {onRecord ? (
-              <Button variant="ghost" className={`${tile} col-span-2 text-white`} onPress={onRecord}>
+              <Button variant="ghost" className={`${tile} col-span-2 text-foreground`} onPress={onRecord}>
                 <Circle size={20} /> Record
               </Button>
             ) : null}
             {isHost ? (
               <>
-                <Button variant="ghost" className={`${tile} text-white`} aria-pressed={locked} onPress={() => onLock(!locked)}>
+                <Button variant="ghost" className={`${tile} text-foreground`} aria-pressed={locked} onPress={() => onLock(!locked)}>
                   {locked ? <Lock size={20} /> : <LockOpen size={20} />} {locked ? "Unlock room" : "Lock room"}
                 </Button>
                 <Button variant="ghost" className={`${tile} text-danger`} onPress={run(onEnd)}>
@@ -95,7 +95,7 @@ export default function MoreDrawer({
               </Button>
             ) : null}
           </div>
-          <div className="flex items-center gap-3 rounded-3xl bg-white/10 py-3 pl-4 pr-2">
+          <div className="flex items-center gap-3 rounded-3xl bg-foreground/10 py-3 pl-4 pr-2">
             <Link2 size={20} aria-hidden />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Meeting link</p>

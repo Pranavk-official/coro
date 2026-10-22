@@ -36,18 +36,18 @@ export default function MeetingChip({
   }
 
   return (
-    <div className="glass flex h-10 items-center gap-2 rounded-full pl-1 pr-3 text-sm text-white">
+    <div className="glass flex h-10 items-center gap-2 rounded-full pl-1 pr-3 text-sm text-foreground">
       <button
         type="button"
         onClick={() => void copy()}
-        className="press flex h-8 items-center gap-1.5 rounded-full px-3 font-semibold hover:bg-white/10"
+        className="press flex h-8 items-center gap-1.5 rounded-full px-3 font-semibold hover:bg-foreground/10"
         aria-label={copied ? "Link copied" : "Copy meeting link"}
       >
         <code>{code}</code>
         {copied ? <Check size={14} /> : <Copy size={14} />}
       </button>
-      {left ? <span className="hidden text-white/80 sm:inline">{left}</span> : null}
-      <span className="text-white/80">
+      {left ? <span className="hidden text-muted sm:inline">{left}</span> : null}
+      <span className="text-muted">
         {count}/{max}
       </span>
     </div>

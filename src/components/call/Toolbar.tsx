@@ -170,7 +170,7 @@ export default function Toolbar({
         <Button
           isIconOnly
           variant={state.mic ? "ghost" : "danger"}
-          className={`size-12 text-white ${state.mic ? "bg-white/15" : ""}`}
+          className={`size-12 ${state.mic ? "bg-foreground/10 text-foreground" : "text-white"}`}
           aria-label={state.mic ? "Mute microphone" : "Unmute microphone"}
           aria-pressed={state.mic}
           onPress={() => onToggle({ mic: !state.mic })}
@@ -180,7 +180,7 @@ export default function Toolbar({
         <Button
           isIconOnly
           variant={state.cam ? "ghost" : "danger"}
-          className={`size-12 text-white ${state.cam ? "bg-white/15" : ""}`}
+          className={`size-12 ${state.cam ? "bg-foreground/10 text-foreground" : "text-white"}`}
           aria-label={state.cam ? "Turn camera off" : "Turn camera on"}
           aria-pressed={state.cam}
           onPress={() => onToggle({ cam: !state.cam })}
@@ -189,7 +189,7 @@ export default function Toolbar({
         </Button>
         {button && button.startedAt !== null ? <RecordButton {...button} /> : null}
         {leaveButton}
-        <Button isIconOnly variant="ghost" className="size-12 bg-white/15 text-white" aria-label="More options" onPress={more.open}>
+        <Button isIconOnly variant="ghost" className="size-12 bg-foreground/10 text-foreground" aria-label="More options" onPress={more.open}>
           <MoreHorizontal size={18} />
         </Button>
         <MoreDrawer
@@ -240,7 +240,7 @@ export default function Toolbar({
           <Button
             isIconOnly
             variant={state.mic ? "ghost" : "danger"}
-            className={`size-12 text-white ${state.mic ? "bg-white/15" : ""}`}
+            className={`size-12 ${state.mic ? "bg-foreground/10 text-foreground" : "text-white"}`}
             aria-label={state.mic ? "Mute microphone" : "Unmute microphone"}
             aria-pressed={state.mic}
             onPress={() => onToggle({ mic: !state.mic })}
@@ -264,7 +264,7 @@ export default function Toolbar({
           <Button
             isIconOnly
             variant={state.cam ? "ghost" : "danger"}
-            className={`size-12 text-white ${state.cam ? "bg-white/15" : ""}`}
+            className={`size-12 ${state.cam ? "bg-foreground/10 text-foreground" : "text-white"}`}
             aria-label={state.cam ? "Turn camera off" : "Turn camera on"}
             aria-pressed={state.cam}
             onPress={() => onToggle({ cam: !state.cam })}
@@ -283,7 +283,7 @@ export default function Toolbar({
           <Button
             isIconOnly
             variant="ghost"
-            className={`size-12 ${sharing ? "bg-white text-black" : "bg-white/15 text-white"}`}
+            className={`size-12 ${sharing ? "bg-foreground text-background" : "bg-foreground/10 text-foreground"}`}
             aria-label={sharing ? "Stop sharing" : "Share screen"}
             aria-pressed={sharing}
             onPress={onShare}
@@ -303,7 +303,7 @@ export default function Toolbar({
         <Button
           isIconOnly
           variant="ghost"
-          className="relative size-12 bg-white/15 text-white"
+          className="relative size-12 bg-foreground/10 text-foreground"
           aria-label={`Participants${waitingCount > 0 ? `, ${waitingCount} waiting` : ""}`}
           onPress={onParticipants}
         >
@@ -322,7 +322,7 @@ export default function Toolbar({
             <Button
               isIconOnly
               variant="ghost"
-              className={`size-12 ${locked ? "bg-white text-black" : "bg-white/15 text-white"}`}
+              className={`size-12 ${locked ? "bg-foreground text-background" : "bg-foreground/10 text-foreground"}`}
               aria-label={locked ? "Unlock room" : "Lock room"}
               aria-pressed={locked}
               onPress={() => onLock(!locked)}

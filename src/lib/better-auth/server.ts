@@ -8,7 +8,8 @@ import { safeNext } from "@/lib/utils/safe-next";
 import { getLimit, rateLimitDisabled, type LimitName } from "@/lib/rate-limit/config";
 import { countBlocked, limit } from "@/lib/rate-limit/limit";
 import { REMOTE_ADDR_HEADER } from "@/lib/rate-limit/ip";
-import { hashIp, rl } from "@/lib/redis/keys";
+import { cacheKey, hashIp, rl } from "@/lib/redis/keys";
+import { bust } from "@/lib/redis/cache";
 
 const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 // Playwright host/member accounts skip the inbox; every other address verifies for real (spec 001 FR17).
@@ -25,11 +26,15 @@ const AUTH_RULES: Record<string, LimitName> = {
   "/magic-link/verify": "auth:magic:verify",
   "/request-password-reset": "auth:reset:ip",
   "/reset-password": "auth:reset:apply",
+  "/delete-user": "auth:delete",
 };
 const ruleFor = (name: LimitName) => {
   const r = getLimit(name);
   return { window: r.windowSec, max: r.max };
 };
+
+/** Room codes of a user being deleted, carried from `beforeDelete` to `afterDelete`. */
+const deletedRooms = new Map<string, string[]>();
 
 export const auth = betterAuth({
   baseURL,
@@ -62,6 +67,25 @@ export const auth = betterAuth({
     expiresIn: 3600,
     sendVerificationEmail: async ({ user, url }) => {
       if (!autoVerify(user.email)) void sendMail(user.email, templates.verifyEmail(url));
+    },
+  },
+  // Delete = emailed link → our interstitial → POST with the token (scanners GET links; nothing is spent on a GET).
+  user: {
+    deleteUser: {
+      enabled: true,
+      deleteTokenExpiresIn: 3600,
+      sendDeleteAccountVerification: async ({ user, token }) =>
+        void sendMail(user.email, templates.deleteAccount(`${baseURL}/delete-account?token=${encodeURIComponent(token)}`)),
+      // Rooms go with the user (FK cascade); drop their read-cache entries too, or old links keep resolving for a TTL.
+      beforeDelete: async (user) => {
+        const rooms = await prisma.room.findMany({ where: { hostId: user.id }, select: { code: true } });
+        deletedRooms.set(user.id, rooms.map((r) => r.code));
+      },
+      afterDelete: async (user) => {
+        const codes = deletedRooms.get(user.id) ?? [];
+        deletedRooms.delete(user.id);
+        await bust(cacheKey("rooms-list", user.id), ...codes.flatMap((c) => [cacheKey("room", c), cacheKey("room-int", c)]));
+      },
     },
   },
   databaseHooks: {
