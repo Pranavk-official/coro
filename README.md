@@ -214,3 +214,7 @@ Metadata lives in `src/app/`: `opengraph-image.tsx` (generated OG/Twitter card),
 
 Request flow: hook → typed `hc` client → Hono route (zod) → service (Prisma + libs). Every HTTP error uses one envelope: `{ success: false, message, error: { code } }`.
 
+
+## License
+
+[MIT](LICENSE) © 2026 Pranav K. Use it, self-host it, change it; keep the copyright notice.
