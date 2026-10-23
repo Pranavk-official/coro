@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { freshUser } from "./helpers";
+import { freshUser, leaveButton } from "./helpers";
 import path from "node:path";
 
 const HOST = path.join(process.cwd(), "tests", ".auth", "host.json");
@@ -166,4 +166,23 @@ test("E58 @regression phone /new: Join with + Meeting length open bottom drawers
   expect(hours).toBeGreaterThan(12);
   expect(hours).toBeLessThan(48);
   await ctx.close();
+});
+
+test("E64 @regression /new Join now shows a pending spinner while the room is created", async ({ page }) => {
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await page.route("**/api/rooms", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    await held; // hold creation so the pending state is observable
+    await route.fallback();
+  });
+  await page.goto("/new");
+  await expect(page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 15000 });
+  await page.getByRole("button", { name: "Join now" }).click();
+  const pending = page.getByRole("button", { name: /Joining/ });
+  await expect(pending).toBeVisible();
+  await expect(pending).toBeDisabled();
+  release();
+  await expect(page).toHaveURL(/\/rooms\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/, { timeout: 15000 });
+  await expect(leaveButton(page)).toBeVisible({ timeout: 15000 });
 });

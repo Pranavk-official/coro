@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Button, useOverlayState } from "@heroui/react";
+import { Button, Spinner, useOverlayState } from "@heroui/react";
 import DeviceDrawer from "@/components/call/DeviceDrawer";
 import MeetingLength, { type LengthValue } from "@/components/call/MeetingLength";
 import SelectField from "@/components/ui/SelectField";
@@ -97,6 +97,7 @@ export default function PreJoin({
   const [name, setName] = useState(pre.prefs.guestName);
   const [error, setError] = useState<string | null>(null);
   const [shareOnly, setShareOnly] = useState(false);
+  const [joining, setJoining] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canShare = typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getDisplayMedia === "function";
   const mode: JoinMode = shareOnly ? "share" : modeOf(pre.prefs.mic, pre.prefs.cam);
@@ -146,11 +147,13 @@ export default function PreJoin({
       setError(errorCopy(toApiError(e).code));
       return;
     }
+    setJoining(true);
     try {
       const base = pre.join();
       await onJoin(screen ? { ...base, state: { ...base.state, screen: true }, screen } : base);
     } catch (e) {
       setError(errorCopy(toApiError(e).code));
+      setJoining(false); // success unmounts PreJoin, so only reset on failure
     }
   }
 
@@ -316,10 +319,20 @@ export default function PreJoin({
           size="lg"
           className={`w-full ${phone ? "h-16 rounded-full text-[21px]" : "h-14 text-[17px]"}`}
           isDisabled={!pre.ready}
+          isPending={joining}
           onPress={() => void join()}
         >
-          {phone ? <Video size={22} aria-hidden /> : null}
-          {askToJoin ? "Ask to join" : "Join now"}
+          {joining ? (
+            <>
+              <Spinner size="sm" color="current" />
+              Joining…
+            </>
+          ) : (
+            <>
+              {phone ? <Video size={22} aria-hidden /> : null}
+              {askToJoin ? "Ask to join" : "Join now"}
+            </>
+          )}
         </Button>
         <div className="flex w-full flex-col gap-3 text-left">
           {/* Phones pick from bottom drawers (like the device sheet); desktop keeps dropdowns. */}
