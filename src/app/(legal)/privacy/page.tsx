@@ -75,7 +75,8 @@ export default function Page() {
         If you sign in with Google, we receive your name, email address and profile picture, and use them only for your
         account. If you connect Google Drive, Coro asks for the <strong>drive.file</strong> permission, which only lets it
         create and manage the files Coro itself saves to your Drive — it cannot see or open anything else in your Drive.
-        Coro uses this permission only to upload recordings you choose to save there, directly from your browser.
+        Coro uses this permission only to upload recordings you choose to save there, directly from your browser, and to
+        give the signed-in people who were in that call view access to the file (Google emails them the link).
       </p>
       <p>
         Coro&apos;s use and transfer of information received from Google APIs adheres to the{" "}

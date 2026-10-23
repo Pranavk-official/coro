@@ -13,6 +13,8 @@ type Active = {
   opts: RecordOptions;
   startedAt: number;
   timer: ReturnType<typeof setTimeout>;
+  /** Signed-in people seen at any point while recording; they get the recording shared. */
+  seen: Set<string>;
 };
 
 /** Whole-meeting recording (spec 003, device + optional Drive copy). `onChange` broadcasts the REC flag. */
@@ -22,12 +24,15 @@ export function useRecorder({
   roomName,
   root,
   onChange,
+  peerUserIds,
 }: {
   code: string;
   /** Shown in the profile's recordings list; falls back to the code. */
   roomName?: string;
   root: () => Element | null;
   onChange: (recording: boolean) => void;
+  /** User ids of the signed-in people in the call right now (no guests). */
+  peerUserIds: string[];
 }) {
   const save = useSaveRecording();
   const saveRef = useRef(save);
@@ -43,6 +48,11 @@ export function useRecorder({
   useEffect(() => {
     changeRef.current = onChange;
   }, [onChange]);
+  const peersRef = useRef(peerUserIds);
+  useEffect(() => {
+    peersRef.current = peerUserIds;
+    for (const id of peerUserIds) active.current?.seen.add(id);
+  }, [peerUserIds]);
 
   const stop = useCallback(async () => {
     const rec = active.current;
@@ -67,6 +77,7 @@ export function useRecorder({
         mimeType: blob.type || `video/${ext}`,
         bytes: blob.size,
         durationMs: Date.now() - rec.startedAt,
+        participantIds: [...rec.seen],
       })
       .catch(() => null);
     notify("rec-saved", { title: `Recording saved · ${size}`, description: "Downloaded to this device", variant: "success" }, 6000);
@@ -118,6 +129,7 @@ export function useRecorder({
         release: capture.release,
         opts,
         startedAt: Date.now(),
+        seen: new Set(peersRef.current),
         timer: setTimeout(() => {
           notify("rec-limit", { title: "Recording stopped at the 120-minute limit.", variant: "warning" });
           void stop();

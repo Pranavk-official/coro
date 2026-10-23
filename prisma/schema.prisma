@@ -25,6 +25,7 @@ model User {
   accounts      Account[]
   rooms         Room[]
   recordings    Recording[]
+  sharedRecordings RecordingParticipant[]
 
   @@unique([email])
   @@map("user")
@@ -111,7 +112,22 @@ model Recording {
   destinations String[] // "device" | "drive"
   driveFileId  String?
   createdAt    DateTime @default(now())
+  participants RecordingParticipant[]
 
   @@index([userId, createdAt])
   @@map("recording")
+}
+
+/// Signed-in people who were in the call while it was recorded: they see it in their list (and get Drive access).
+/// `name` is a snapshot, so the list still reads right after a rename.
+model RecordingParticipant {
+  recordingId String
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+
+  @@id([recordingId, userId])
+  @@index([userId])
+  @@map("recording_participant")
 }

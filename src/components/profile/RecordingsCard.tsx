@@ -10,10 +10,11 @@ const mmss = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+const names = (list: string[]) => (list.length > 3 ? `${list.slice(0, 3).join(", ")} +${list.length - 3}` : list.join(", "));
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
 
-/** Profile: every recording you saved, where it went, and a way back to the Drive copy. Files are never touched here. */
+/** Profile: every recording you saved or were in, where it went, and a way back to the Drive copy. Files are never touched here. */
 export default function RecordingsCard() {
   const { data, isPending, isError } = useRecordings();
   const remove = useDeleteRecording();
@@ -25,7 +26,7 @@ export default function RecordingsCard() {
         </span>
         <div className="min-w-0">
           <h2 className="text-[19px] font-semibold tracking-tight">Recordings</h2>
-          <p className="text-sm text-muted">What you&apos;ve recorded and where each file was saved.</p>
+          <p className="text-sm text-muted">Calls you recorded or were in, and where each file was saved.</p>
         </div>
       </div>
       {isPending ? (
@@ -48,9 +49,14 @@ export default function RecordingsCard() {
                 <p className="truncate text-sm text-muted">
                   {when(r.createdAt)} · {mmss(r.durationMs)} · {mb(r.bytes)}
                 </p>
+                {!r.isOwner ? (
+                  <p className="truncate text-sm text-muted">Recorded by {r.recordedBy}</p>
+                ) : r.participants.length ? (
+                  <p className="truncate text-sm text-muted">With {names(r.participants)}</p>
+                ) : null}
                 <p className="truncate font-mono text-xs text-muted">{r.name}</p>
                 <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[13px]">
-                  {r.destinations.includes("device") ? (
+                  {r.isOwner && r.destinations.includes("device") ? (
                     <span className="inline-flex items-center gap-1 rounded-lg bg-default px-2 py-0.5">
                       <HardDrive size={12} aria-hidden /> This device
                     </span>
@@ -64,6 +70,8 @@ export default function RecordingsCard() {
                     >
                       <FaGoogleDrive size={11} aria-hidden /> Open in Drive <ExternalLink size={11} aria-hidden />
                     </a>
+                  ) : !r.isOwner ? (
+                    <span className="text-muted">Only on {r.recordedBy}&apos;s device</span>
                   ) : null}
                 </p>
               </div>

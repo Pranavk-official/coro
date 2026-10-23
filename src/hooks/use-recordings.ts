@@ -25,6 +25,7 @@ export function useSaveRecording() {
       mimeType: string;
       bytes: number;
       durationMs: number;
+      participantIds: string[];
     }): Promise<PublicRecording> => apiJson(await api.api.recordings.$post({ json: body })),
     onSuccess: done,
   });
@@ -36,7 +37,7 @@ export function useSaveRecording() {
   return { create, attachDrive };
 }
 
-/** Forgets a recording; the file itself stays wherever it was saved. */
+/** Forgets a recording (a participant only leaves its list); the file itself stays wherever it was saved. */
 export function useDeleteRecording() {
   const qc = useQueryClient();
   return useMutation({

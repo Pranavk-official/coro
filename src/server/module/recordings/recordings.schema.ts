@@ -7,6 +7,8 @@ export const createRecordingSchema = z.object({
   mimeType: z.string().min(1).max(100),
   bytes: z.number().int().nonnegative(),
   durationMs: z.number().int().nonnegative(),
+  /** User ids seen in the call while recording; the server keeps only real, signed-in accounts. */
+  participantIds: z.array(z.string().min(1).max(64)).max(100).default([]),
 });
 
 export const attachDriveSchema = z.object({ driveFileId: z.string().min(1).max(200) });

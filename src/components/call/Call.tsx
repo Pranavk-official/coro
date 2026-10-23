@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, useOverlayState } from "@heroui/react";
 import { Copy, Share2 } from "lucide-react";
@@ -109,11 +109,14 @@ export default function Call({
   });
   const { setMedia } = call;
   const callRef = useRef<HTMLElement>(null);
+  const peerKey = [...call.peers.values()].filter((p) => !p.info.isGuest).map((p) => p.info.userId).sort().join(",");
+  const peerUserIds = useMemo(() => (peerKey ? peerKey.split(",") : []), [peerKey]); // stable across media-only re-renders
   const recorder = useRecorder({
     code,
     roomName: roomInfo.data?.name,
     root: useCallback(() => callRef.current, []),
     onChange: useCallback((recording: boolean) => setMedia({ recording }), [setMedia]),
+    peerUserIds,
   });
   const [recordOpen, setRecordOpen] = useState(false);
   const isGuest = (session?.user as { isAnonymous?: boolean } | undefined)?.isAnonymous ?? true;
