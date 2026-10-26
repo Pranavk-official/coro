@@ -89,6 +89,11 @@ export function createPeer(
 
   if (opts.stream) {
     for (const track of opts.stream.getTracks()) pc.addTrack(track, opts.stream);
+    // Joined with cam or mic off (device released): keep a slot so turning it on is a replaceTrack.
+    const tracks = opts.stream.getTracks();
+    for (const kind of ["audio", "video"] as const) {
+      if (!tracks.some((t) => t.kind === kind)) pc.addTransceiver(kind, { direction: "sendrecv", streams: [opts.stream] });
+    }
   } else {
     // No camera/mic (blocked or screen-share-only): still receive, and keep slots to send a track later.
     pc.addTransceiver("audio", { direction: "sendrecv" });

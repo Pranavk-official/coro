@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { getPrefs, setPrefs } from "../../src/lib/utils/prefs";
-import { getStream, pickDevice, type DeviceInfo } from "../../src/lib/webrtc/devices";
+import { getStream, openTrack, pickDevice, releaseKind, type DeviceInfo } from "../../src/lib/webrtc/devices";
 
 test("U12 @regression prefs survive missing/broken storage", async () => {
   const defaults = getPrefs();
@@ -55,4 +55,37 @@ test("U12b @regression getStream falls back when the saved device is gone or a k
 
   const denied = { ...fake, getUserMedia: async () => { throw fail("NotAllowedError"); } };
   await expect(getStream({ mic: true, cam: true }, { media: denied })).rejects.toThrow("NotAllowedError");
+});
+
+test("U22 @regression releaseKind stops + removes one kind; openTrack reopens it (saved device, else default)", async () => {
+  type T = { kind: string; stopped: boolean; stop(): void };
+  const track = (kind: string): T => ({ kind, stopped: false, stop() { this.stopped = true; } });
+  const mic = track("audio");
+  const cam = track("video");
+  const removed: T[] = [];
+  const stream = {
+    getAudioTracks: () => [mic].filter((t) => !removed.includes(t)),
+    getVideoTracks: () => [cam].filter((t) => !removed.includes(t)),
+    removeTrack: (t: T) => removed.push(t),
+  } as unknown as MediaStream;
+  releaseKind(stream, "video");
+  expect(cam.stopped).toBe(true);
+  expect(mic.stopped).toBe(false);
+  expect(stream.getVideoTracks()).toHaveLength(0);
+
+  const asked: MediaStreamConstraints[] = [];
+  const media = {
+    enumerateDevices: async () => [],
+    getUserMedia: async (c: MediaStreamConstraints) => {
+      asked.push(c);
+      if (typeof c.video === "object") throw Object.assign(new Error("gone"), { name: "OverconstrainedError" });
+      const t = track("video");
+      return { getAudioTracks: () => [], getVideoTracks: () => [t] } as unknown as MediaStream;
+    },
+  };
+  const reopened = await openTrack("video", "cam-unplugged", { media });
+  expect(reopened?.kind).toBe("video");
+  expect(asked[0]).toEqual({ audio: false, video: { deviceId: { exact: "cam-unplugged" } } }); // saved device first
+  expect(asked[1]).toEqual({ audio: false, video: true }); // then the default
+  expect(await openTrack("audio", null, { media: null })).toBeNull();
 });

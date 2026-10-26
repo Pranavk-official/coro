@@ -80,6 +80,26 @@ export async function switchTrack(
   return track;
 }
 
+/** Turning off releases the device (camera light off); this opens it again on turn-on. Saved device, else the default. */
+export async function openTrack(
+  kind: "audio" | "video",
+  deviceId: string | null,
+  deps?: MediaDeps,
+): Promise<MediaStreamTrack | null> {
+  const media = depsMedia(deps);
+  if (!media) return null;
+  const s = await getStream({ mic: kind === "audio", cam: kind === "video", micId: deviceId, camId: deviceId }, deps);
+  return (kind === "audio" ? s?.getAudioTracks() : s?.getVideoTracks())?.[0] ?? null;
+}
+
+/** Stops and removes `kind`'s tracks: the browser releases the device. */
+export function releaseKind(stream: MediaStream, kind: "audio" | "video"): void {
+  for (const t of kind === "audio" ? stream.getAudioTracks() : stream.getVideoTracks()) {
+    t.stop();
+    stream.removeTrack(t);
+  }
+}
+
 export function setSpeaker(el: HTMLMediaElement, deviceId: string): void {
   const withSink = el as HTMLMediaElement & { setSinkId?: (id: string) => Promise<void> };
   if (typeof withSink.setSinkId === "function") {

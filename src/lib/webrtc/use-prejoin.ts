@@ -5,6 +5,8 @@ import {
   getStream,
   listDevices,
   onDeviceChange,
+  openTrack,
+  releaseKind,
   setSpeaker,
   switchTrack,
   type DeviceInfo,
@@ -35,15 +37,15 @@ export function usePrejoin() {
   useEffect(() => {
     let live = true;
     const p = getPrefs();
-    // Always capture both and apply the saved on/off as track.enabled: "off" stays toggleable in the call
-    // without a second permission prompt, and both-off isn't misreported as "blocked".
+    // Always ask for both (one permission prompt, and both-off isn't misreported as "blocked"), then
+    // release whatever is saved as off, so its device light goes out.
     void getStream({ mic: true, cam: true, micId: p.micId, camId: p.camId }).catch(() => null).then((s) => {
       if (!live) {
         s?.getTracks().forEach((t) => t.stop());
         return;
       }
-      s?.getAudioTracks().forEach((t) => (t.enabled = p.mic));
-      s?.getVideoTracks().forEach((t) => (t.enabled = p.cam));
+      if (s && !p.mic) releaseKind(s, "audio");
+      if (s && !p.cam) releaseKind(s, "video");
       streamRef.current = s;
       setStream(s);
       setReady(true);
@@ -87,21 +89,41 @@ export function usePrejoin() {
     }
   }, [stream]);
 
-  const setMic = useCallback(
-    (v: boolean) => {
-      streamRef.current?.getAudioTracks().forEach((t) => (t.enabled = v));
-      patch({ mic: v });
+  // Off releases the device; on opens it again. A new MediaStream object re-attaches the preview and meter.
+  const opening = useRef({ audio: 0, video: 0 });
+  const toggle = useCallback(
+    (kind: "audio" | "video", v: boolean) => {
+      patch(kind === "audio" ? { mic: v } : { cam: v });
+      const s = streamRef.current;
+      if (!s) return;
+      const ticket = ++opening.current[kind];
+      if (!v) {
+        releaseKind(s, kind);
+        const next = new MediaStream(s.getTracks());
+        streamRef.current = next;
+        setStream(next);
+        return;
+      }
+      const p = getPrefs();
+      void openTrack(kind, kind === "audio" ? p.micId : p.camId)
+        .catch(() => null)
+        .then((track) => {
+          const cur = streamRef.current;
+          if (ticket !== opening.current[kind] || !cur) return void track?.stop();
+          if (!track) {
+            patch(kind === "audio" ? { mic: false } : { cam: false });
+            return;
+          }
+          releaseKind(cur, kind);
+          const next = new MediaStream([...cur.getTracks(), track]);
+          streamRef.current = next;
+          setStream(next);
+        });
     },
     [patch],
   );
-
-  const setCam = useCallback(
-    (v: boolean) => {
-      streamRef.current?.getVideoTracks().forEach((t) => (t.enabled = v));
-      patch({ cam: v });
-    },
-    [patch],
-  );
+  const setMic = useCallback((v: boolean) => toggle("audio", v), [toggle]);
+  const setCam = useCallback((v: boolean) => toggle("video", v), [toggle]);
 
   const selectDevice = useCallback(
     async (kind: "audio" | "video" | "speaker", deviceId: string) => {
@@ -110,7 +132,8 @@ export function usePrejoin() {
         return;
       }
       const s = streamRef.current;
-      if (!s) {
+      // No stream, or this device is off: remember it; turning on opens it.
+      if (!s || !(kind === "audio" ? getPrefs().mic : getPrefs().cam)) {
         patch(kind === "audio" ? { micId: deviceId } : { camId: deviceId });
         return;
       }

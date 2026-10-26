@@ -13,6 +13,8 @@ import { createAutoFollow, createSpeakerDetector } from "@/lib/webrtc/speaker";
 import { getDisplayStream, splitStreams } from "@/lib/webrtc/screen";
 import { useIceServers } from "@/hooks/use-ice-servers";
 import { notify } from "@/lib/toast";
+import { getPrefs } from "@/lib/utils/prefs";
+import { openTrack, releaseKind } from "@/lib/webrtc/devices";
 
 export type CallStatus =
   | { kind: "joining" }
@@ -62,6 +64,9 @@ export function useCall(opts: {
   const [localState, setLocalState] = useState<MediaState>(initialState);
   const [localScreen, setLocalScreen] = useState<MediaStream | null>(opts.initialScreen ?? null);
   const [localStream] = useState<MediaStream | null>(opts.initialStream);
+  // Bumped when a device is released or reopened: the tile and speaking detection re-read the stream.
+  const [micTrackId, setMicTrackId] = useState<string | null>(opts.initialStream?.getAudioTracks()[0]?.id ?? null);
+  const [camTrackId, setCamTrackId] = useState<string | null>(opts.initialStream?.getVideoTracks()[0]?.id ?? null);
   const { data: iceServers } = useIceServers();
   // Ref, not a dep: ICE servers arriving must not re-run the join effect (leave + rejoin mid-handshake).
   const iceRef = useRef(iceServers);
@@ -74,6 +79,7 @@ export function useCall(opts: {
   const detectorRef = useRef<ReturnType<typeof createSpeakerDetector> | null>(null);
   const followRef = useRef<ReturnType<typeof createAutoFollow> | null>(null);
   const detectorStreams = useRef(new Map<string, MediaStream | null>());
+  const localMicRef = useRef<string | null>(null);
 
   const pcs = useRef(new Map<string, ManagedPeer>());
   const infos = useRef(new Map<string, Peer>());
@@ -159,17 +165,55 @@ export function useCall(opts: {
     [applyAllCaps, carrier],
   );
 
-  const setMedia = useCallback((patch: Partial<MediaState>) => {
-    const next = { ...stateRef.current, ...patch };
-    stateRef.current = next;
-    setLocalState(next);
-    const stream = streamRef.current;
-    if (stream) {
-      for (const track of stream.getAudioTracks()) track.enabled = next.mic;
-      for (const track of stream.getVideoTracks()) track.enabled = next.cam; // camera runs alongside a share
-    }
-    getSocket().emit("state", next);
+  // Off releases the device (camera light and mic indicator go out); on opens it again and swaps it into
+  // every peer's sender. `opening` drops a device that arrives after it was switched off again.
+  const opening = useRef({ audio: 0, video: 0 });
+  const swapTrack = useCallback((kind: "audio" | "video", track: MediaStreamTrack | null) => {
+    void Promise.all(
+      [...pcs.current.values()].map((pc) => (kind === "video" ? pc.replaceVideoTrack(track) : pc.replaceAudioTrack(track))),
+    );
+    if (kind === "audio") setMicTrackId(track?.id ?? null);
+    else setCamTrackId(track?.id ?? null);
   }, []);
+  const setMedia = useCallback(
+    (patch: Partial<MediaState>) => {
+      const next = { ...stateRef.current, ...patch };
+      stateRef.current = next;
+      setLocalState(next);
+      getSocket().emit("state", next);
+      const stream = streamRef.current;
+      if (!stream) return; // blocked devices: nothing to open or release
+      for (const kind of ["audio", "video"] as const) {
+        const on = kind === "audio" ? next.mic : next.cam; // camera runs alongside a share
+        const has = (kind === "audio" ? stream.getAudioTracks() : stream.getVideoTracks()).length > 0;
+        if (!on && has) {
+          opening.current[kind]++;
+          releaseKind(stream, kind);
+          swapTrack(kind, null);
+        } else if (on && !has) {
+          const ticket = ++opening.current[kind];
+          const prefs = getPrefs();
+          void openTrack(kind, kind === "audio" ? prefs.micId : prefs.camId)
+            .catch(() => null)
+            .then((track) => {
+              if (ticket !== opening.current[kind] || !liveRef.current) return void track?.stop();
+              if (!track) {
+                notify("device-error", { title: `Couldn't turn on your ${kind === "audio" ? "microphone" : "camera"}`, variant: "danger" });
+                const off = { ...stateRef.current, [kind === "audio" ? "mic" : "cam"]: false };
+                stateRef.current = off;
+                setLocalState(off);
+                getSocket().emit("state", off);
+                return;
+              }
+              stream.addTrack(track);
+              swapTrack(kind, track);
+              if (kind === "video") void applyAllCaps();
+            });
+        }
+      }
+    },
+    [swapTrack, applyAllCaps],
+  );
   const stopShare = useCallback(async () => {
     const shared = screenRef.current;
     screenRef.current = null;
@@ -181,6 +225,8 @@ export function useCall(opts: {
 
   const switchDevice = useCallback(
     async (kind: "audio" | "video", deviceId: string): Promise<boolean> => {
+      // Off: just remember the choice (the caller saves it); turning on opens this device.
+      if (!(kind === "audio" ? stateRef.current.mic : stateRef.current.cam)) return true;
       try {
         const next = await navigator.mediaDevices.getUserMedia({
           [kind]: { deviceId: { exact: deviceId } },
@@ -195,17 +241,13 @@ export function useCall(opts: {
           }
           stream.addTrack(track);
         }
-        await Promise.all(
-          [...pcs.current.values()].map((pc) =>
-            kind === "video" ? pc.replaceVideoTrack(track) : pc.replaceAudioTrack(track),
-          ),
-        );
+        swapTrack(kind, track);
         return true;
       } catch {
         return false;
       }
     },
-    [],
+    [swapTrack],
   );
 
   const startShare = useCallback(async (): Promise<boolean> => {
@@ -251,6 +293,12 @@ export function useCall(opts: {
     function stopScreen() {
       screenRef.current?.getTracks().forEach((t) => t.stop());
       screenRef.current = null;
+    }
+
+    // Leaving unmounts the call: release the camera and mic too, or the browser keeps them on.
+    function stopLocal() {
+      stopScreen();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
     }
 
     function cleanupMedia() {
@@ -387,7 +435,7 @@ export function useCall(opts: {
       // Dev strict mode re-runs this effect at once; stopping then would kill a share-only join's capture.
       liveRef.current = false;
       setTimeout(() => {
-        if (!liveRef.current) stopScreen();
+        if (!liveRef.current) stopLocal();
       }, 0);
       cleanupMedia();
     };
@@ -419,10 +467,11 @@ export function useCall(opts: {
     const seen = new Set<string>();
     if (localStream) {
       seen.add("local");
-      if (detectorStreams.current.get("local") !== localStream) {
+      if (detectorStreams.current.get("local") !== localStream || localMicRef.current !== micTrackId) {
         detector.remove("local");
         detector.add("local", localStream);
         detectorStreams.current.set("local", localStream);
+        localMicRef.current = micTrackId;
       }
     }
     for (const [id, peer] of peers) {
@@ -440,7 +489,7 @@ export function useCall(opts: {
         detectorStreams.current.delete(id);
       }
     }
-  }, [peers, localStream]);
+  }, [peers, localStream, micTrackId]);
 
   const presenterId = [...peers.values()].find((p) => p.info.state.screen)?.info.id ?? null;
 
@@ -457,6 +506,8 @@ export function useCall(opts: {
     isHost,
     localState,
     localStream,
+    /** Changes when the camera is released or reopened: remount the local preview so it shows the new track. */
+    camTrackId,
     /** Our own presentation (preview only; never played with sound). */
     localScreen,
     /** Remote peer currently presenting (one at a time, spec 007 FR6). */

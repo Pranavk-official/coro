@@ -288,7 +288,7 @@ export default function Call({
   if (call.status.kind === "joining") {
     return (
       <main className="flex flex-1 items-center justify-center bg-background p-4 text-foreground">
-        <LocalPreview stream={stream} />
+        <LocalPreview key={call.camTrackId ?? "off"} stream={stream} />
       </main>
     );
   }
@@ -440,7 +440,7 @@ export default function Call({
       </div>
       {/* Self-view floats like FaceTime's PiP so the people you're talking to get the screen. */}
       <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-3 z-20 w-28 overflow-hidden rounded-2xl border border-hairline bg-surface shadow-product sm:w-56">
-        <LocalPreview stream={stream} />
+        <LocalPreview key={call.camTrackId ?? "off"} stream={stream} />
         {!call.localState.cam ? <PersonAvatar seed={session?.user.id ?? "you"} name={session?.user.name || "You"} image={session?.user.image} size={80} /> : null}
         <p className="absolute bottom-1 left-2 text-xs font-semibold text-white drop-shadow">You</p>
         {call.speakingId === "local" && call.localState.mic ? <SpeakingRing /> : null}

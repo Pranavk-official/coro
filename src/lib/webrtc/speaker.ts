@@ -36,6 +36,7 @@ export function createSpeakerDetector(opts?: {
   }
 
   function analyserLevel(stream: MediaStream): LevelSource {
+    if (!stream.getAudioTracks().length) return () => 0; // mic off = device released; re-added when it reopens
     if (!analyserCtx) analyserCtx = new AudioContext();
     const analyser = analyserCtx.createAnalyser();
     analyser.fftSize = 512;
