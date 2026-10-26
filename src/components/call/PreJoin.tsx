@@ -154,6 +154,7 @@ export default function PreJoin({
     } catch (e) {
       setError(errorCopy(toApiError(e).code));
       setJoining(false); // success unmounts PreJoin, so only reset on failure
+      pre.joinFailed();
     }
   }
 

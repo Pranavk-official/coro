@@ -20,6 +20,8 @@ export function usePrejoin() {
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [level, setLevel] = useState(0);
   const streamRef = useRef<MediaStream | null>(null);
+  // Set by join(): the call owns the stream from then on, so leaving pre-join must not stop it.
+  const handedOff = useRef(false);
   const analyserRef = useRef<{ analyser: AnalyserNode; data: Float32Array } | null>(null);
 
   const patch = useCallback((p: Partial<{ mic: boolean; cam: boolean; micId: string | null; camId: string | null; speakerId: string | null; guestName: string }>) => {
@@ -56,6 +58,9 @@ export function usePrejoin() {
     return () => {
       live = false;
       off();
+      // Back to home / browser back: release camera and mic (an in-flight reopen sees null and stops too).
+      if (!handedOff.current) streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     };
     async function refreshDevicesOnMount(): Promise<void> {
       if (!live) return;
@@ -171,8 +176,13 @@ export function usePrejoin() {
     selectDevice,
     previewSpeaker,
     stop,
+    /** Joining failed and pre-join stays: it owns the stream again. */
+    joinFailed: () => {
+      handedOff.current = false;
+    },
     // Blocked/missing device = off for everyone else too (else peers get a blank tile, not the mascot).
     join: () => {
+      handedOff.current = true;
       const s = streamRef.current;
       return {
         stream: s,

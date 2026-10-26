@@ -145,3 +145,17 @@ test("E68 @regression slow connection after Join now → 'Joining…' status, th
   await expect(leaveButton(page)).toBeVisible({ timeout: 20_000 });
   await host.ctx.close();
 });
+
+test("E69 @regression @uat leaving pre-join (Back to home) releases the camera and mic", async ({ browser }) => {
+  const host = await asRole(browser, "host");
+  await host.page.addInitScript(recordTracks);
+  for (const path of ["/new", "/rooms/" + (await createRoomAs(host.ctx.request, { name: "E69", kind: "instant" })).code]) {
+    await host.page.goto(path);
+    await expect(host.page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 15_000 });
+    await expect.poll(() => liveCaptures(host.page)).toBeGreaterThan(0);
+    await host.page.getByRole("link", { name: "Back to home" }).click();
+    await expect(host.page).toHaveURL("/");
+    await expect.poll(() => liveCaptures(host.page)).toBe(0);
+  }
+  await host.ctx.close();
+});
