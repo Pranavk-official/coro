@@ -123,3 +123,25 @@ test("E67 @regression @uat camera off / mic off release the device; turning them
   await host.ctx.close();
   await member.ctx.close();
 });
+
+test("E68 @regression slow connection after Join now → 'Joining…' status, then the call", async ({ browser }) => {
+  const host = await asRole(browser, "host");
+  const page = await host.ctx.newPage();
+  await page.setViewportSize({ width: 375, height: 740 });
+  const room = await createRoomAs(host.ctx.request, { name: "E68", kind: "instant" });
+  // hold the signaling connection, like a slow mobile network
+  await page.route("**/socket.io/**", async (r) => {
+    await new Promise((x) => setTimeout(x, 4000));
+    await r.fallback().catch(() => undefined);
+  });
+  await page.routeWebSocket("**/socket.io/**", async (ws) => {
+    await new Promise((x) => setTimeout(x, 4000));
+    ws.connectToServer();
+  });
+  await page.goto(`/rooms/${room.code}`);
+  await expect(page.getByRole("button", { name: "Join now" })).toBeEnabled({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Join now" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Joining…" })).toBeVisible();
+  await expect(leaveButton(page)).toBeVisible({ timeout: 20_000 });
+  await host.ctx.close();
+});

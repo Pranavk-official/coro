@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Button, Card, CardContent, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, Spinner, useOverlayState } from "@heroui/react";
 import { Copy, Share2 } from "lucide-react";
 import { useEndRoom, useRoom } from "@/hooks/use-rooms";
 import { getSocket } from "@/lib/socket.io/client";
@@ -287,8 +287,15 @@ export default function Call({
 
   if (call.status.kind === "joining") {
     return (
-      <main className="flex flex-1 items-center justify-center bg-background p-4 text-foreground">
-        <LocalPreview key={call.camTrackId ?? "off"} stream={stream} />
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 bg-background p-4 text-foreground">
+        <div className="w-full max-w-xl overflow-hidden rounded-card">
+          <LocalPreview key={call.camTrackId ?? "off"} stream={stream} />
+        </div>
+        {/* Connecting can take a few seconds on mobile networks: say so instead of a frozen preview. */}
+        <p role="status" className="flex items-center gap-2 text-muted">
+          <Spinner size="sm" color="current" />
+          Joining…
+        </p>
       </main>
     );
   }

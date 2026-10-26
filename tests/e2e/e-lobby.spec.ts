@@ -110,7 +110,9 @@ test("E23b @uat link for later has no modal and no time", async ({ page }) => {
 /** Tomorrow's day-of-month cell in the visible calendar (a 1st-of-month tomorrow is in the next page: skip that rare case). */
 const tomorrow = () => {
   const d = new Date(Date.now() + 86_400_000);
-  return { day: d.getDate(), sameMonth: d.getMonth() === new Date().getMonth() };
+  // `cell` matches the full label ("October 27,"): a bare "27" also hits last month's greyed-out days.
+  const cell = new RegExp(`${d.toLocaleString("en-US", { month: "long" })} ${d.getDate()},`);
+  return { day: d.getDate(), cell, sameMonth: d.getMonth() === new Date().getMonth() };
 };
 const endsHoursFromNow = async (page: import("@playwright/test").Page) => {
   await expect(page).toHaveURL(/\/rooms\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/, { timeout: 15000 });
@@ -128,7 +130,7 @@ test("E57 @regression desktop custom end time: HeroUI date picker (calendar + ti
   await page.getByRole("option", { name: "Custom end time" }).click();
   await expect(page.getByRole("spinbutton", { name: "month, Custom end time" })).toBeVisible(); // HeroUI DateField, not a native input
   await page.getByRole("button", { name: "Calendar Custom end time" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: new RegExp(`\\b${t.day}\\b`) }).first().click();
+  await page.getByRole("dialog").getByRole("button", { name: t.cell }).click();
   await expect(page.getByRole("dialog").getByText("Time", { exact: true })).toBeVisible(); // popover stays open for the time
   await page.keyboard.press("Escape");
   await expect(page.getByRole("spinbutton", { name: "day, Custom end time" })).toHaveText(String(t.day).padStart(2, "0"));
@@ -155,7 +157,7 @@ test("E58 @regression phone /new: Join with + Meeting length open bottom drawers
   await page.getByRole("button", { name: /^Meeting length: 1 hr/ }).click();
   await page.getByRole("dialog", { name: "Meeting length" }).getByRole("button", { name: "Custom end time" }).click();
   const stacked = page.getByRole("dialog", { name: "Custom end time" }); // nested drawer on top of the list
-  await stacked.getByRole("grid").getByRole("button", { name: new RegExp(`\\b${t.day}\\b`) }).first().click();
+  await stacked.getByRole("grid").getByRole("button", { name: t.cell }).click();
   await stacked.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0); // Done closes both
   await expect(page.getByRole("button", { name: /^Meeting length: Until / })).toBeVisible();
